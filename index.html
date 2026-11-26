@@ -1,0 +1,1868 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PARTY DRINK - รวมเกมวงเหล้าสุดมันส์ 12 เกม</title>
+    <!-- โหลด Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- โหลด Google Fonts: Kanit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- โหลด FontAwesome สำหรับไอคอน -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- โหลด Tone.js สำหรับเสียงเอฟเฟกต์ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- โหลด Three.js สำหรับจระเข้ 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: #090d16;
+            color: #f8fafc;
+            overflow-x: hidden;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* พื้นหลัง Gradient นุ่มนวล */
+        .bg-ambient {
+            background: radial-gradient(circle at 15% 15%, rgba(139, 92, 246, 0.14), transparent 45%),
+                        radial-gradient(circle at 85% 85%, rgba(236, 72, 153, 0.12), transparent 45%),
+                        #090d16;
+        }
+
+        /* การ์ดสไตล์ Glassmorphism */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+        }
+
+        .glass-card-hover {
+            transition: transform 0.18s ease, background-color 0.18s ease, border-color 0.18s ease;
+        }
+        .glass-card-hover:active {
+            transform: scale(0.97);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        /* เอฟเฟกต์พลิกไพ่ 3D */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-style: preserve-3d;
+        }
+        .card-flipped {
+            transform: rotateY(180deg);
+        }
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            border-radius: 1.5rem;
+        }
+        .card-back {
+            transform: rotateY(180deg);
+        }
+
+        /* เอฟเฟกต์หมุนขวด */
+        .bottle-spin {
+            transition: transform 4s cubic-bezier(0.15, 0.85, 0.15, 1);
+        }
+
+        /* เอฟเฟกต์สั่น */
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            20% { transform: translate(-6px, 4px) rotate(-2deg); }
+            40% { transform: translate(6px, -4px) rotate(2deg); }
+            60% { transform: translate(-6px, -4px) rotate(-1deg); }
+            80% { transform: translate(6px, 4px) rotate(1deg); }
+        }
+        .screen-shake {
+            animation: shake 0.45s ease-in-out;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 99px; }
+    </style>
+</head>
+<body class="bg-ambient min-h-screen flex flex-col justify-between">
+
+    <!-- ==================== แถบเมนูด้านบน (HEADER) ==================== -->
+    <header class="w-full max-w-lg mx-auto px-4 pt-4 pb-2 flex items-center justify-between z-30">
+        <div onclick="navigateTo('home')" class="flex items-center gap-3 cursor-pointer active:opacity-80 transition">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-fuchsia-600 to-violet-600 flex items-center justify-center text-white shadow-lg shadow-fuchsia-600/20">
+                <i class="fa-solid fa-champagne-glasses text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight text-white leading-none">PARTY DRINK</h1>
+                <p class="text-[11px] text-slate-400 font-light mt-0.5">รวม 12 เกมวงเหล้าสุดมันส์</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- ปุ่มเปิด/ปิดเสียง -->
+            <button id="soundToggleBtn" onclick="toggleSound()" class="w-10 h-10 rounded-2xl glass-card flex items-center justify-center text-slate-300 hover:text-white transition" title="เปิด/ปิดเสียง">
+                <i id="soundIcon" class="fa-solid fa-volume-high text-sm"></i>
+            </button>
+            <!-- ปุ่มจัดการรายชื่อเพื่อน -->
+            <button onclick="openPlayerModal()" class="h-10 px-3.5 rounded-2xl glass-card flex items-center gap-2 text-xs font-medium text-slate-200 hover:text-white transition">
+                <i class="fa-solid fa-users text-fuchsia-400"></i>
+                <span id="playerCountBadge">3 คน</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- ==================== พื้นที่เนื้อหาหลัก ==================== -->
+    <main class="w-full max-w-lg mx-auto flex-1 px-4 py-3 flex flex-col">
+
+        <!-- ==================== หน้าหลัก: เลือกเกม (HOME VIEW) ==================== -->
+        <section id="view-home" class="w-full flex flex-col gap-4">
+            <div class="pt-1 flex items-end justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-white">เลือกเกมที่จะเล่น 🍻</h2>
+                    <p class="text-xs text-slate-400 font-light mt-0.5">รวมครบ 12 เกมฮิต แตะที่เกมเพื่อเริ่มสนุกได้เลย</p>
+                </div>
+            </div>
+
+            <!-- ตารางเลือกเกม 12 เกม -->
+            <div class="w-full grid grid-cols-2 gap-3">
+                <!-- 1. ไพ่พระราชา -->
+                <button onclick="navigateTo('kings')" class="glass-card glass-card-hover p-4 rounded-3xl text-left flex flex-col justify-between min-h-[128px]">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-400 flex items-center justify-center text-xl">👑</div>
+                    <div class="mt-2.5">
+                        <h3 class="font-semibold text-[15px] text-white leading-snug">ไพ่พระราชา</h3>
+                        <p class="text-[11px] text-slate-400 font-light mt-0.5">จั่วไพ่ทำตามกฎ 52 ใบ</p>
+                    </div>
+                </button>
+
+                <!-- 2. จริงหรือท้า -->
+                <button onclick="navigateTo('tod')" class="glass-card glass-card-hover p-4 rounded-3xl text-left flex flex-col justify-between min-h-[128px]">
+                    <div class="w-10 h-10 rounded-2xl bg-pink-500/15 text-pink-400 flex items-center justify-center text-xl">😈</div>
+                    <div class="mt-2.5">
+                        <h3 class="font-semibold text-[15px] text-white leading-snug">จริงหรือท้า</h3>
+                        <p class="text-[11px] text-slate-400 font-light mt-0.5">เลือกความจริงหรือทำตามท้า</p>
+                    </div>
+                </button>
+
+                <!-- 3. หมุนขวดวัดดวง -->
+                <button onclick="navigateTo('bottle')" class="glass-card glass-card-hover p-4 rounded-3xl text-left flex flex-col justify-between min-h-[128px]">
+                    <div class="w-10 h-10 rounded-2xl bg-cyan-500/15 text-cyan-400 flex items-center justify-center text-xl">🍾</div>
+                    <div class="mt-2.5">
+                        <h3 class="font-semibold text-[15px] text-white leading-snug">หมุนขวดบอกชื่อ</h3>
+                        <p class="text-[11px] text-slate-400 font-light mt-0.5">หมุนสุ่มชี้ชื่อคนรับชะตากรรม</p>
+                    </div>
+                </button>
+
+                <!-- 4. ระเบิดเวลาต่อคำ -->
+                <button onclick="navigateTo('bomb')" class="glass-card glass-card-hover p-4 rounded-3xl text-left flex flex-col justify-between min-h-[128px]">
+                    <div class="w-10 h-10 rounded-2xl bg-orange-500/15 text-orange-400 flex items-center justify-center text-xl">💣</div>
+                    <div class="mt-2.5">
+                        <h3 class="font-semibold text-[15px] text-white leading-snug">ระเบิดเวลาต่อคำ</h3>
+                        <p class="text-[11px] text-slate-400 font-light mt-0.5">พูดคำตามหมวดก่อนระเบิด</p>
+                    </div>
+                </button>
+
+                <!-- 5. ฉันไม่เคย -->
+                <button onclick="navigateTo('never')" class="glass-card glass-card-hover p-4 rounded-3xl text-left flex flex-col justify-between min-h-[128px]">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-xl">🙊</div>
+                    <div class="mt-2.5">
+                        <h3 class="font-semibold text-[15px] text-white leading-snug">ฉันไม่เคย...</h3>
+                        <p class="text-[11px] text-slate-400 font-light mt-0.5">แฉความลับ ใครเคยทำยกดื่ม</p>
+                    </div>
+                </button>
+
+                <!-- 6. วงล้อบทลงโทษ -->
+                <button onclick="navigateTo('wheel')" class="glass-card glass-card-hover p-4 rounded-3xl text-left flex flex-col justify-between min-h-[128px]">
+                    <div class="w-10 h-10 rounded-2xl bg-violet-500/15 text-violet-400 flex items-center justify-center text-xl">🎡</div>
+                    <div class="mt-2.5">
+                        <h3 class="font-semibold text-[15px] text-white leading-snug">วงล้อบทลงโทษ</h3>
+                        <p class="text-[11px] text-slate-400 font-light mt-0.5">หมุนสุ่มบทลงโทษสุดโหด</p>
+                    </div>
+                </button>
+
+                <!-- 7. ใครในวงที่เป็น... -->
+                <button onclick="navigateTo('most')" class="glass-card glass-card-hover p-4 rounded-3xl text-left flex flex-col justify-between min-h-[128px]">
+                    <div class="w-10 h-10 rounded-2xl bg-sky-500/15 text-sky-400 flex items-center justify-center text-xl">👉</div>
+                    <div class="mt-2.5">
+                        <h3 class="font-semibold text-[15px] text-white leading-snug">ใครในวงที่เป็น...</h3>
+                        <p class="text-[11px] text-slate-400 font-light mt-0.5">นับ 1-2-3 ชี้พร้อมกัน โดนชี้ดื่ม</p>
+                    </div>
+                </button>
+
+                <!-- 8. ไพ่สูงหรือต่ำ -->
+                <button onclick="navigateTo('highlow')" class="glass-card glass-card-hover p-4 rounded-3xl text-left flex flex-col justify-between min-h-[128px]">
+                    <div class="w-10 h-10 rounded-2xl bg-rose-500/15 text-rose-400 flex items-center justify-center text-xl">🃏</div>
+                    <div class="mt-2.5">
+                        <h3 class="font-semibold text-[15px] text-white leading-snug">ไพ่สูงหรือต่ำ</h3>
+                        <p class="text-[11px] text-slate-400 font-light mt-0.5">ทายไพ่ใบถัดไป ผิดยกดื่ม</p>
+                    </div>
+                </button>
+
+                <!-- 9. 5 วิ ตอบให้ทัน! -->
+                <button onclick="navigateTo('fivesec')" class="glass-card glass-card-hover p-4 rounded-3xl text-left flex flex-col justify-between min-h-[128px]">
+                    <div class="w-10 h-10 rounded-2xl bg-yellow-500/15 text-yellow-400 flex items-center justify-center text-xl">⏱️</div>
+                    <div class="mt-2.5">
+                        <h3 class="font-semibold text-[15px] text-white leading-snug">5 วิ ตอบให้ทัน!</h3>
+                        <p class="text-[11px] text-slate-400 font-light mt-0.5">บอกชื่อ 3 อย่างใน 5 วินาที</p>
+                    </div>
+                </button>
+
+                <!-- 10. ทอยเหรียญวัดใจ -->
+                <button onclick="navigateTo('coin')" class="glass-card glass-card-hover p-4 rounded-3xl text-left flex flex-col justify-between min-h-[128px]">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center text-xl">🪙</div>
+                    <div class="mt-2.5">
+                        <h3 class="font-semibold text-[15px] text-white leading-snug">ทอยเหรียญวัดใจ</h3>
+                        <p class="text-[11px] text-slate-400 font-light mt-0.5">หัวหรือก้อย ทายถูกสั่งเพื่อน</p>
+                    </div>
+                </button>
+
+                <!-- 11. ลูกเต๋ามรณะ -->
+                <button onclick="navigateTo('dice')" class="glass-card glass-card-hover p-4 rounded-3xl text-left flex flex-col justify-between min-h-[128px]">
+                    <div class="w-10 h-10 rounded-2xl bg-teal-500/15 text-teal-400 flex items-center justify-center text-xl">🎲</div>
+                    <div class="mt-2.5">
+                        <h3 class="font-semibold text-[15px] text-white leading-snug">ลูกเต๋ามรณะ</h3>
+                        <p class="text-[11px] text-slate-400 font-light mt-0.5">ทอยเต๋าคู่ ลุ้นเลขเบิ้ลและเลข 7</p>
+                    </div>
+                </button>
+
+                <!-- 12. งับนิ้วจระเข้ 3D -->
+                <button onclick="navigateTo('croc')" class="glass-card glass-card-hover p-4 rounded-3xl text-left flex flex-col justify-between min-h-[128px]">
+                    <div class="w-10 h-10 rounded-2xl bg-lime-500/15 text-lime-400 flex items-center justify-center text-xl">🐊</div>
+                    <div class="mt-2.5">
+                        <h3 class="font-semibold text-[15px] text-white leading-snug">งับนิ้วจระเข้ 3D</h3>
+                        <p class="text-[11px] text-slate-400 font-light mt-0.5">กดฟัน 3D ใครโดนงับหมดแก้ว!</p>
+                    </div>
+                </button>
+            </div>
+
+            <!-- ปุ่มเพิ่มชื่อเพื่อน -->
+            <button onclick="openPlayerModal()" class="w-full glass-card glass-card-hover p-4 rounded-2xl flex items-center justify-between text-left mt-1">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-fuchsia-500/15 text-fuchsia-400 flex items-center justify-center">
+                        <i class="fa-solid fa-user-plus text-sm"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-white">ตั้งชื่อคนร่วมวง</p>
+                        <p class="text-[11px] text-slate-400 font-light">เพื่อให้เกมสุ่มเรียกชื่อเพื่อนอัตโนมัติ</p>
+                    </div>
+                </div>
+                <i class="fa-solid fa-chevron-right text-slate-500 text-xs"></i>
+            </button>
+        </section>
+
+        <!-- ==================== เกมที่ 1: ไพ่พระราชา (KING'S CUP) ==================== -->
+        <section id="view-kings" class="hidden flex-col flex-1 justify-between space-y-5">
+            <div class="flex items-center justify-between">
+                <button onclick="navigateTo('home')" class="h-10 px-4 rounded-2xl glass-card text-slate-300 text-sm font-medium hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> กลับ
+                </button>
+                <div class="flex items-center gap-2">
+                    <span class="px-3 py-1.5 rounded-xl bg-amber-500/15 text-amber-300 text-xs font-medium">
+                        👑 King <span id="kingCountText">0</span>/4
+                    </span>
+                    <span class="px-3 py-1.5 rounded-xl glass-card text-slate-300 text-xs font-medium">
+                        เหลือ <span id="cardsLeftText">52</span> ใบ
+                    </span>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <p class="text-xs text-slate-400">ตาของ</p>
+                <h3 id="kingsCurrentPlayer" class="text-2xl font-bold text-white mt-0.5">คนที่ 1</h3>
+            </div>
+
+            <div class="flex-1 flex items-center justify-center my-2">
+                <div onclick="drawKingCard()" class="w-64 h-[350px] perspective-1000 cursor-pointer">
+                    <div id="kingCardInner" class="card-inner">
+                        <div class="card-face glass-card flex flex-col items-center justify-center p-6 text-center border border-white/15">
+                            <div class="w-16 h-16 rounded-2xl bg-amber-500/15 text-amber-400 flex items-center justify-center text-3xl mb-4">👑</div>
+                            <p class="text-white font-semibold text-base">แตะเพื่อจั่วไพ่</p>
+                            <p class="text-xs text-slate-400 font-light mt-1">ไพ่พระราชา (King's Cup)</p>
+                        </div>
+                        <div class="card-face card-back bg-slate-100 text-slate-900 flex flex-col justify-between p-5 shadow-2xl">
+                            <div class="flex justify-between items-center w-full">
+                                <span id="cardTopRank" class="text-2xl font-bold leading-none">A</span>
+                                <span id="cardTopSuit" class="text-xl leading-none">♠</span>
+                            </div>
+                            <div class="text-center my-auto px-1">
+                                <div id="cardCenterSuit" class="text-4xl mb-2">♠</div>
+                                <h4 id="cardRuleTitle" class="text-lg font-bold text-slate-900 leading-tight">กฎของไพ่</h4>
+                                <p id="cardRuleDesc" class="text-xs text-slate-600 mt-1.5 leading-relaxed font-normal">คำอธิบายกติกาจะแสดงที่นี่</p>
+                            </div>
+                            <div class="flex justify-between items-center w-full rotate-180">
+                                <span id="cardBottomRank" class="text-2xl font-bold leading-none">A</span>
+                                <span id="cardBottomSuit" class="text-xl leading-none">♠</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="resetKingsGame()" class="w-14 h-14 rounded-2xl glass-card text-slate-300 hover:text-white flex items-center justify-center transition" title="สับไพ่ใหม่">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+                <button onclick="drawKingCard()" class="flex-1 h-14 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-violet-600 hover:opacity-95 text-white font-semibold text-base shadow-lg shadow-fuchsia-600/20 active:scale-95 transition">
+                    จั่วไพ่ใบต่อไป
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== เกมที่ 2: จริงหรือท้า (TRUTH OR DARE) ==================== -->
+        <section id="view-tod" class="hidden flex-col flex-1 justify-between space-y-5">
+            <div class="flex items-center justify-between">
+                <button onclick="navigateTo('home')" class="h-10 px-4 rounded-2xl glass-card text-slate-300 text-sm font-medium hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> กลับ
+                </button>
+                <div class="flex p-1 rounded-xl glass-card gap-1">
+                    <button onclick="setTodLevel('mild')" id="lvl-mild" class="px-3 py-1 rounded-lg text-xs font-medium bg-emerald-500 text-slate-950 transition">ชิลล์</button>
+                    <button onclick="setTodLevel('spicy')" id="lvl-spicy" class="px-3 py-1 rounded-lg text-xs font-medium text-slate-300 transition">แซ่บ</button>
+                    <button onclick="setTodLevel('extreme')" id="lvl-extreme" class="px-3 py-1 rounded-lg text-xs font-medium text-slate-300 transition">18+</button>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <p class="text-xs text-slate-400">ตาของ</p>
+                <h3 id="todCurrentPlayer" class="text-2xl font-bold text-white mt-0.5">คนที่ 1</h3>
+            </div>
+
+            <div class="flex-1 flex items-center justify-center my-2">
+                <div class="w-full min-h-[260px] glass-card rounded-3xl p-6 flex flex-col items-center justify-center text-center">
+                    <span id="todBadge" class="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-slate-300 mb-4">เลือกโหมดด้านล่าง</span>
+                    <p id="todPromptText" class="text-xl font-semibold text-white leading-relaxed">
+                        กดเลือก <span class="text-sky-400">"ความจริง"</span> หรือ <span class="text-pink-400">"คำท้า"</span>
+                    </p>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="pickTod('truth')" class="h-14 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-base shadow-lg shadow-sky-500/20 active:scale-95 transition">
+                        ความจริง 😇
+                    </button>
+                    <button onclick="pickTod('dare')" class="h-14 rounded-2xl bg-pink-500 hover:bg-pink-400 text-white font-bold text-base shadow-lg shadow-pink-500/20 active:scale-95 transition">
+                        คำท้า 😈
+                    </button>
+                </div>
+                <button onclick="nextTodTurn()" class="w-full h-11 rounded-2xl glass-card text-xs font-medium text-slate-300 hover:text-white transition">
+                    ข้ามไปตาคนถัดไป <i class="fa-solid fa-forward ml-1"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== เกมที่ 3: หมุนขวดบอกชื่อ ==================== -->
+        <section id="view-bottle" class="hidden flex-col flex-1 justify-between space-y-5">
+            <div class="flex items-center justify-between">
+                <button onclick="navigateTo('home')" class="h-10 px-4 rounded-2xl glass-card text-slate-300 text-sm font-medium hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> กลับ
+                </button>
+                <button onclick="openPlayerModal()" class="h-10 px-3.5 rounded-2xl glass-card text-cyan-400 text-xs font-medium hover:text-white flex items-center gap-1.5">
+                    <i class="fa-solid fa-user-pen"></i> แก้ชื่อเพื่อน
+                </button>
+            </div>
+
+            <div class="text-center space-y-1">
+                <h3 class="text-2xl font-bold text-white">หมุนขวดบอกชื่อ 🍾</h3>
+                <p id="bottleResultText" class="text-sm text-cyan-400 font-medium min-h-[24px]">แตะที่ขวดเพื่อหมุนสุ่มชื่อเพื่อน</p>
+            </div>
+
+            <div class="flex-1 flex items-center justify-center my-2">
+                <div id="bottleArena" class="w-72 h-72 sm:w-80 sm:h-80 rounded-full glass-card flex items-center justify-center relative">
+                    <!-- ป้ายชื่อเพื่อนรอบวงกลมจะถูกสร้างด้วย JS -->
+                    <div id="bottlePlayersRing" class="absolute inset-0 pointer-events-none"></div>
+
+                    <div id="bottleElement" onclick="spinBottle()" class="bottle-spin cursor-pointer w-20 h-48 flex items-center justify-center z-10">
+                        <svg viewBox="0 0 100 280" class="w-full h-full drop-shadow-xl">
+                            <rect x="38" y="8" width="24" height="14" rx="4" fill="#f43f5e" />
+                            <path d="M40 22 L60 22 L64 85 L36 85 Z" fill="#06b6d4" />
+                            <rect x="24" y="85" width="52" height="175" rx="18" fill="#0891b2" />
+                            <rect x="28" y="130" width="44" height="75" rx="8" fill="#0f172a" />
+                            <text x="50" y="164" font-size="10" font-weight="bold" fill="#f8fafc" text-anchor="middle">PARTY</text>
+                            <text x="50" y="180" font-size="10" font-weight="bold" fill="#38bdf8" text-anchor="middle">DRINK</text>
+                            <polygon points="50,32 43,48 57,48" fill="#ffffff" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <button id="spinBottleBtn" onclick="spinBottle()" class="w-full h-14 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-base shadow-lg shadow-cyan-500/20 active:scale-95 transition">
+                หมุนขวดเลย 🔄
+            </button>
+        </section>
+
+        <!-- ==================== เกมที่ 4: ระเบิดเวลาต่อคำ ==================== -->
+        <section id="view-bomb" class="hidden flex-col flex-1 justify-between space-y-5">
+            <div class="flex items-center justify-between">
+                <button onclick="stopBombGame(); navigateTo('home')" class="h-10 px-4 rounded-2xl glass-card text-slate-300 text-sm font-medium hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> กลับ
+                </button>
+                <span class="px-3 py-1.5 rounded-xl bg-orange-500/15 text-orange-300 text-xs font-medium">⏱️ เวลาสุ่ม 10-25 วิ</span>
+            </div>
+
+            <div class="glass-card rounded-3xl p-5 text-center">
+                <p class="text-xs text-slate-400">หมวดหมู่คำศัพท์</p>
+                <h3 id="bombCategoryText" class="text-2xl font-bold text-amber-400 mt-1">กดเริ่มเกมเพื่อสุ่มหมวด</h3>
+            </div>
+
+            <div class="flex-1 flex flex-col items-center justify-center my-2">
+                <div id="bombVisual" class="relative w-36 h-36 rounded-full glass-card flex items-center justify-center transition-transform">
+                    <span class="text-7xl select-none">💣</span>
+                    <div id="bombSpark" class="hidden absolute -top-2 right-5 text-2xl animate-ping">🔥</div>
+                </div>
+                <p id="bombStatusText" class="mt-5 text-base font-medium text-slate-300 text-center">ส่งมือถือต่อให้เพื่อนเมื่อตอบเสร็จ!</p>
+            </div>
+
+            <button id="bombActionBtn" onclick="startBombGame()" class="w-full h-14 rounded-2xl bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold text-base shadow-lg shadow-orange-500/20 active:scale-95 transition">
+                จุดชนวนระเบิด 🔥
+            </button>
+        </section>
+
+        <!-- ==================== เกมที่ 5: ฉันไม่เคย (NEVER HAVE I EVER) ==================== -->
+        <section id="view-never" class="hidden flex-col flex-1 justify-between space-y-5">
+            <div class="flex items-center justify-between">
+                <button onclick="navigateTo('home')" class="h-10 px-4 rounded-2xl glass-card text-slate-300 text-sm font-medium hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> กลับ
+                </button>
+                <span class="px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-300 text-xs font-medium">ใครเคยทำ = ยกดื่ม!</span>
+            </div>
+
+            <div class="flex-1 flex items-center justify-center my-2">
+                <div class="w-full min-h-[280px] glass-card rounded-3xl p-7 flex flex-col items-center justify-center text-center">
+                    <span class="text-4xl mb-4">🙊</span>
+                    <p class="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-2">ฉันไม่เคย...</p>
+                    <h3 id="neverPromptText" class="text-2xl font-bold text-white leading-relaxed">
+                        แอบส่องเฟซบุ๊กหรือไอจีแฟนเก่าตอนเมา
+                    </h3>
+                </div>
+            </div>
+
+            <button onclick="nextNeverPrompt()" class="w-full h-14 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-base shadow-lg shadow-emerald-500/20 active:scale-95 transition">
+                ข้อต่อไป <i class="fa-solid fa-arrow-right ml-1"></i>
+            </button>
+        </section>
+
+        <!-- ==================== เกมที่ 6: วงล้อบทลงโทษ ==================== -->
+        <section id="view-wheel" class="hidden flex-col flex-1 justify-between space-y-5">
+            <div class="flex items-center justify-between">
+                <button onclick="navigateTo('home')" class="h-10 px-4 rounded-2xl glass-card text-slate-300 text-sm font-medium hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> กลับ
+                </button>
+                <div class="text-right">
+                    <span class="text-[11px] text-slate-400">คนรับชะตากรรม: </span>
+                    <span id="wheelCurrentPlayer" class="text-xs font-bold text-fuchsia-400">คนที่ 1</span>
+                </div>
+            </div>
+
+            <div class="flex-1 flex flex-col items-center justify-center my-1">
+                <div class="relative w-72 h-72 sm:w-80 sm:h-80 flex items-center justify-center">
+                    <div class="absolute -top-3 z-20 text-white text-2xl drop-shadow-md">▼</div>
+                    <canvas id="wheelCanvas" width="320" height="320" class="w-full h-full rounded-full shadow-2xl border-4 border-white/10"></canvas>
+                </div>
+            </div>
+
+            <div class="flex gap-3">
+                <button onclick="changeWheelPlayer()" class="h-14 px-4 rounded-2xl glass-card text-xs font-medium text-slate-300 hover:text-white transition">
+                    เปลี่ยนคน
+                </button>
+                <button id="spinWheelBtn" onclick="spinWheel()" class="flex-1 h-14 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-bold text-base shadow-lg shadow-violet-600/20 active:scale-95 transition">
+                    หมุนวงล้อ 🎡
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== เกมที่ 7: ใครในวงที่เป็น... (MOST LIKELY TO) ==================== -->
+        <section id="view-most" class="hidden flex-col flex-1 justify-between space-y-5">
+            <div class="flex items-center justify-between">
+                <button onclick="navigateTo('home')" class="h-10 px-4 rounded-2xl glass-card text-slate-300 text-sm font-medium hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> กลับ
+                </button>
+                <span class="px-3 py-1.5 rounded-xl bg-sky-500/15 text-sky-300 text-xs font-medium">นับ 1-2-3 ชี้พร้อมกัน!</span>
+            </div>
+
+            <div class="flex-1 flex items-center justify-center my-2">
+                <div class="w-full min-h-[280px] glass-card rounded-3xl p-7 flex flex-col items-center justify-center text-center">
+                    <span class="text-4xl mb-4">👉</span>
+                    <p class="text-xs font-semibold text-sky-400 uppercase tracking-wider mb-2">ใครในวงที่เป็นคน...</p>
+                    <h3 id="mostPromptText" class="text-2xl font-bold text-white leading-relaxed">
+                        เมาแล้วชอบโทรหาแฟนเก่ามากที่สุด!
+                    </h3>
+                    <p class="text-xs text-slate-400 font-light mt-4">ใครโดนเพื่อนชี้เยอะสุด ดื่มตามจำนวนนิ้วที่โดนชี้!</p>
+                </div>
+            </div>
+
+            <button onclick="nextMostPrompt()" class="w-full h-14 rounded-2xl bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-base shadow-lg shadow-sky-500/20 active:scale-95 transition">
+                คำถามถัดไป 👉
+            </button>
+        </section>
+
+        <!-- ==================== เกมที่ 8: ไพ่สูงหรือต่ำ (HIGH OR LOW) ==================== -->
+        <section id="view-highlow" class="hidden flex-col flex-1 justify-between space-y-5">
+            <div class="flex items-center justify-between">
+                <button onclick="navigateTo('home')" class="h-10 px-4 rounded-2xl glass-card text-slate-300 text-sm font-medium hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> กลับ
+                </button>
+                <span class="px-3 py-1.5 rounded-xl bg-rose-500/15 text-rose-300 text-xs font-medium">
+                    ทายถูกติดต่อกัน: <span id="hlStreakText">0</span>/3
+                </span>
+            </div>
+
+            <div class="text-center">
+                <p class="text-xs text-slate-400">ตาของ</p>
+                <h3 id="hlCurrentPlayer" class="text-2xl font-bold text-white mt-0.5">คนที่ 1</h3>
+            </div>
+
+            <div class="flex-1 flex flex-col items-center justify-center my-2">
+                <div id="hlCardDisplay" class="w-52 h-72 bg-slate-100 text-slate-900 rounded-3xl p-5 flex flex-col justify-between shadow-2xl transition-transform">
+                    <div class="flex justify-between items-center w-full">
+                        <span id="hlTopRank" class="text-2xl font-bold leading-none">7</span>
+                        <span id="hlTopSuit" class="text-xl leading-none">♥</span>
+                    </div>
+                    <div class="text-center my-auto">
+                        <div id="hlCenterSuit" class="text-6xl">♥</div>
+                    </div>
+                    <div class="flex justify-between items-center w-full rotate-180">
+                        <span id="hlBottomRank" class="text-2xl font-bold leading-none">7</span>
+                        <span id="hlBottomSuit" class="text-xl leading-none">♥</span>
+                    </div>
+                </div>
+                <p id="hlStatusText" class="text-xs text-slate-300 mt-4 text-center">ทายว่าไพ่ใบต่อไปจะ "สูงกว่า" หรือ "ต่ำกว่า" (ถ้าออกเลขเท่ากันถือว่าแพ้!)</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="guessHighLow('low')" class="h-14 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-base shadow-lg shadow-indigo-500/20 active:scale-95 transition">
+                    ต่ำกว่า 🔽
+                </button>
+                <button onclick="guessHighLow('high')" class="h-14 rounded-2xl bg-rose-500 hover:bg-rose-400 text-white font-bold text-base shadow-lg shadow-rose-500/20 active:scale-95 transition">
+                    สูงกว่า 🔼
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== เกมที่ 9: 5 วิ ตอบให้ทัน! (5 SECOND RULE) ==================== -->
+        <section id="view-fivesec" class="hidden flex-col flex-1 justify-between space-y-5">
+            <div class="flex items-center justify-between">
+                <button onclick="stopFiveSecTimer(); navigateTo('home')" class="h-10 px-4 rounded-2xl glass-card text-slate-300 text-sm font-medium hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> กลับ
+                </button>
+                <span class="px-3 py-1.5 rounded-xl bg-yellow-500/15 text-yellow-300 text-xs font-medium">⏱️ จับเวลา 5 วินาที</span>
+            </div>
+
+            <div class="text-center">
+                <p class="text-xs text-slate-400">ตาของ</p>
+                <h3 id="fiveSecCurrentPlayer" class="text-2xl font-bold text-white mt-0.5">คนที่ 1</h3>
+            </div>
+
+            <div class="flex-1 flex flex-col items-center justify-center my-2 space-y-4">
+                <div class="w-full glass-card rounded-3xl p-6 text-center">
+                    <p class="text-xs text-yellow-400 font-semibold mb-2">บอกชื่อ 3 อย่างภายใน 5 วินาที!</p>
+                    <h4 id="fiveSecPromptText" class="text-xl font-bold text-white leading-relaxed">
+                        บอกชื่อยี่ห้อเบียร์ 3 ยี่ห้อ!
+                    </h4>
+                </div>
+
+                <div class="w-28 h-28 rounded-full glass-card border-2 border-yellow-400/40 flex items-center justify-center">
+                    <span id="fiveSecTimerDisplay" class="text-4xl font-extrabold text-yellow-400">5.0</span>
+                </div>
+            </div>
+
+            <div class="space-y-3">
+                <button id="fiveSecStartBtn" onclick="startFiveSecTimer()" class="w-full h-14 rounded-2xl bg-yellow-400 hover:bg-yellow-300 text-slate-950 font-bold text-base shadow-lg shadow-yellow-400/20 active:scale-95 transition">
+                    เริ่มจับเวลา 5 วิ! ⏱️
+                </button>
+                <div id="fiveSecJudgeBtns" class="hidden grid grid-cols-2 gap-3">
+                    <button onclick="judgeFiveSec(false)" class="h-14 rounded-2xl bg-rose-500 text-white font-bold text-sm active:scale-95 transition">
+                        ตอบไม่ทัน (ดื่ม!) 🍺
+                    </button>
+                    <button onclick="judgeFiveSec(true)" class="h-14 rounded-2xl bg-emerald-500 text-slate-950 font-bold text-sm active:scale-95 transition">
+                        รอดตัว! ข้อต่อไป ✅
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== เกมที่ 10: ทอยเหรียญวัดใจ (COIN FLIP) ==================== -->
+        <section id="view-coin" class="hidden flex-col flex-1 justify-between space-y-5">
+            <div class="flex items-center justify-between">
+                <button onclick="navigateTo('home')" class="h-10 px-4 rounded-2xl glass-card text-slate-300 text-sm font-medium hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> กลับ
+                </button>
+                <span class="px-3 py-1.5 rounded-xl bg-indigo-500/15 text-indigo-300 text-xs font-medium">ทายถูกสั่งเพื่อน ทายผิดดื่มเอง</span>
+            </div>
+
+            <div class="text-center">
+                <p class="text-xs text-slate-400">ตาของ</p>
+                <h3 id="coinCurrentPlayer" class="text-2xl font-bold text-white mt-0.5">คนที่ 1</h3>
+            </div>
+
+            <div class="flex-1 flex flex-col items-center justify-center my-2">
+                <div id="coinVisual" class="w-40 h-40 rounded-full bg-gradient-to-tr from-amber-500 via-yellow-300 to-amber-400 border-4 border-amber-200 shadow-2xl flex flex-col items-center justify-center text-slate-950 transition-transform duration-700">
+                    <span id="coinEmoji" class="text-5xl mb-1">👑</span>
+                    <span id="coinSideLabel" class="text-lg font-extrabold tracking-wide">หัว / ก้อย</span>
+                </div>
+                <p id="coinStatusText" class="text-sm text-slate-300 mt-5 text-center">เลือกทายด้านล่างก่อนดีดเหรียญ!</p>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <button id="coinHeadBtn" onclick="flipCoin('หัว')" class="h-14 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-base shadow-lg shadow-amber-400/20 active:scale-95 transition">
+                    ทาย "หัว" 👑
+                </button>
+                <button id="coinTailBtn" onclick="flipCoin('ก้อย')" class="h-14 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-base shadow-lg shadow-indigo-500/20 active:scale-95 transition">
+                    ทาย "ก้อย" 🦅
+                </button>
+            </div>
+        </section>
+
+        <!-- ==================== เกมที่ 11: ลูกเต๋ามรณะ (DICE DRINKING) ==================== -->
+        <section id="view-dice" class="hidden flex-col flex-1 justify-between space-y-5">
+            <div class="flex items-center justify-between">
+                <button onclick="navigateTo('home')" class="h-10 px-4 rounded-2xl glass-card text-slate-300 text-sm font-medium hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> กลับ
+                </button>
+                <span class="px-3 py-1.5 rounded-xl bg-teal-500/15 text-teal-300 text-xs font-medium">ทอยเต๋าคู่ 2 ลูก</span>
+            </div>
+
+            <div class="text-center">
+                <p class="text-xs text-slate-400">ตาของ</p>
+                <h3 id="diceCurrentPlayer" class="text-2xl font-bold text-white mt-0.5">คนที่ 1</h3>
+            </div>
+
+            <div class="flex-1 flex flex-col items-center justify-center my-2 space-y-6">
+                <div class="flex items-center gap-5">
+                    <div id="dice1Box" class="w-24 h-24 rounded-3xl bg-slate-100 text-slate-900 flex items-center justify-center text-5xl font-extrabold shadow-xl">
+                        🎲
+                    </div>
+                    <div id="dice2Box" class="w-24 h-24 rounded-3xl bg-slate-100 text-slate-900 flex items-center justify-center text-5xl font-extrabold shadow-xl">
+                        🎲
+                    </div>
+                </div>
+                <div class="glass-card rounded-2xl p-4 w-full text-center">
+                    <h4 id="diceRuleTitle" class="text-base font-bold text-teal-400">กดปุ่มทอยลูกเต๋าด้านล่าง</h4>
+                    <p id="diceRuleDesc" class="text-xs text-slate-300 mt-1">ออกเบิ้ล = แจกเพื่อนดื่ม | รวมได้ 7 = ดื่มทั้งวง!</p>
+                </div>
+            </div>
+
+            <button id="rollDiceBtn" onclick="rollDiceGame()" class="w-full h-14 rounded-2xl bg-teal-400 hover:bg-teal-300 text-slate-950 font-bold text-base shadow-lg shadow-teal-400/20 active:scale-95 transition">
+                ทอยลูกเต๋า 🎲
+            </button>
+        </section>
+
+        <!-- ==================== เกมที่ 12: งับนิ้วจระเข้ 3D (CROCODILE ROULETTE 3D) ==================== -->
+        <section id="view-croc" class="hidden flex-col flex-1 justify-between space-y-4">
+            <div class="flex items-center justify-between">
+                <button onclick="navigateTo('home')" class="h-10 px-4 rounded-2xl glass-card text-slate-300 text-sm font-medium hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> กลับ
+                </button>
+                <button onclick="resetCrocGame()" class="h-10 px-4 rounded-2xl glass-card text-lime-400 text-xs font-medium hover:bg-white/10 flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-right"></i> เริ่มใหม่
+                </button>
+            </div>
+
+            <div class="text-center space-y-1">
+                <h3 class="text-2xl font-bold text-white">งับนิ้วจระเข้ 3D 🐊</h3>
+                <p id="crocStatusText" class="text-sm text-slate-300">แตะที่ซี่ฟันในปากจระเข้ 3D คนละ 1 ซี่!</p>
+            </div>
+
+            <!-- พื้นที่แสดงผล 3D Canvas -->
+            <div class="flex-1 flex items-center justify-center my-1">
+                <div id="croc3dContainer" class="w-full h-[340px] sm:h-[380px] rounded-3xl glass-card overflow-hidden relative cursor-pointer">
+                    <!-- Three.js Canvas จะถูกสร้างที่นี่ -->
+                </div>
+            </div>
+
+            <div class="text-center text-xs text-slate-400 font-light">
+                แตะเลือกซี่ฟันสีขาวในปากจระเข้ • ระวังซี่กับดัก!
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="w-full max-w-lg mx-auto px-4 py-3 text-center text-[11px] text-slate-500 font-light">
+        ดื่มอย่างมีสติ เมาไม่ขับ กลับบ้านปลอดภัยนะครับ 🚕
+    </footer>
+
+    <!-- ==================== MODAL: จัดการรายชื่อผู้เล่น ==================== -->
+    <div id="playerModal" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-[#121826] border border-white/10 w-full max-w-sm rounded-3xl p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center">
+                <h3 class="text-lg font-bold text-white">รายชื่อคนร่วมวง 🍻</h3>
+                <button onclick="closePlayerModal()" class="w-8 h-8 rounded-full bg-white/5 text-slate-400 hover:text-white flex items-center justify-center">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            
+            <div class="flex gap-2">
+                <input type="text" id="newPlayerInput" placeholder="พิมพ์ชื่อเพื่อน..." maxlength="15"
+                    class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-fuchsia-500"
+                    onkeypress="if(event.key === 'Enter') addPlayer()">
+                <button onclick="addPlayer()" class="px-5 py-3 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-semibold text-sm transition">
+                    เพิ่ม
+                </button>
+            </div>
+
+            <div id="playerListContainer" class="max-h-56 overflow-y-auto space-y-2 pr-1"></div>
+
+            <button onclick="closePlayerModal()" class="w-full py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-medium text-sm transition">
+                เสร็จสิ้น
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: แจ้งเตือนผลลัพธ์ ==================== -->
+    <div id="resultModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-[#121826] border border-white/15 w-full max-w-sm rounded-3xl p-6 text-center space-y-4 shadow-2xl">
+            <div id="resultModalIcon" class="text-5xl">🍻</div>
+            <h3 id="resultModalTitle" class="text-xl font-bold text-white">หัวข้อแจ้งเตือน</h3>
+            <p id="resultModalDesc" class="text-sm text-slate-300 leading-relaxed font-normal">รายละเอียด</p>
+            <button onclick="closeResultModal()" class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-violet-600 text-white font-semibold text-sm shadow-lg active:scale-95 transition">
+                รับทราบ! ยกแก้ว 🍺
+            </button>
+        </div>
+    </div>
+
+    <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+    <script>
+        // ==================== 1. ระบบเสียง (Tone.js) ====================
+        let soundEnabled = true;
+        let synth = null;
+
+        function initAudio() {
+            if (!synth && typeof Tone !== 'undefined') {
+                synth = new Tone.PolySynth(Tone.Synth).toDestination();
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            try {
+                initAudio();
+                if (Tone.context.state !== 'running') Tone.start();
+                if (!synth) return;
+                const now = Tone.now();
+                if (type === 'click') synth.triggerAttackRelease("C5", "32n", now);
+                else if (type === 'card') synth.triggerAttackRelease(["E4", "G4"], "16n", now);
+                else if (type === 'tick') synth.triggerAttackRelease("A5", "64n", now);
+                else if (type === 'boom') synth.triggerAttackRelease(["C2", "C#2", "D2", "G1"], "2n", now);
+                else if (type === 'win') synth.triggerAttackRelease(["C5", "E5", "G5", "C6"], "8n", now);
+            } catch (e) {}
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            icon.className = soundEnabled ? 'fa-solid fa-volume-high text-sm' : 'fa-solid fa-volume-xmark text-sm text-rose-400';
+            if (soundEnabled) playSound('click');
+        }
+
+        // ==================== 2. ระบบจัดการผู้เล่นและการเปลี่ยนหน้า ====================
+        let players = ["คนที่ 1", "คนที่ 2", "คนที่ 3"];
+        let currentPlayerIdx = 0;
+
+        function getNextPlayer() {
+            if (players.length === 0) return "ผู้เล่น";
+            const name = players[currentPlayerIdx % players.length];
+            currentPlayerIdx++;
+            return name;
+        }
+
+        function getRandomPlayer() {
+            if (players.length === 0) return "เพื่อนทางซ้าย";
+            return players[Math.floor(Math.random() * players.length)];
+        }
+
+        function updatePlayerBadge() {
+            document.getElementById('playerCountBadge').textContent = `${players.length} คน`;
+        }
+
+        function openPlayerModal() {
+            playSound('click');
+            renderPlayerList();
+            document.getElementById('playerModal').classList.remove('hidden');
+            document.getElementById('playerModal').classList.add('flex');
+        }
+
+        function closePlayerModal() {
+            playSound('click');
+            document.getElementById('playerModal').classList.add('hidden');
+            document.getElementById('playerModal').classList.remove('flex');
+            renderBottlePlayers();
+        }
+
+        function renderPlayerList() {
+            const container = document.getElementById('playerListContainer');
+            container.innerHTML = '';
+            players.forEach((p, idx) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between bg-white/5 px-3.5 py-2.5 rounded-xl';
+                div.innerHTML = `
+                    <span class="text-sm text-slate-200">${idx + 1}. ${p}</span>
+                    ${players.length > 1 ? `<button onclick="removePlayer(${idx})" class="text-slate-400 hover:text-rose-400 p-1"><i class="fa-solid fa-trash-can text-xs"></i></button>` : ''}
+                `;
+                container.appendChild(div);
+            });
+            updatePlayerBadge();
+        }
+
+        function addPlayer() {
+            const input = document.getElementById('newPlayerInput');
+            const name = input.value.trim();
+            if (name) {
+                playSound('click');
+                players.push(name);
+                input.value = '';
+                renderPlayerList();
+            }
+        }
+
+        function removePlayer(idx) {
+            if (players.length > 1) {
+                playSound('click');
+                players.splice(idx, 1);
+                renderPlayerList();
+            }
+        }
+
+        function navigateTo(viewId) {
+            playSound('click');
+            const sections = ['home', 'kings', 'tod', 'bottle', 'bomb', 'never', 'wheel', 'most', 'highlow', 'fivesec', 'coin', 'dice', 'croc'];
+            sections.forEach(sec => {
+                const el = document.getElementById(`view-${sec}`);
+                if (el) {
+                    if (sec === viewId) {
+                        el.classList.remove('hidden');
+                        el.classList.add('flex');
+                    } else {
+                        el.classList.add('hidden');
+                        el.classList.remove('flex');
+                    }
+                }
+            });
+
+            if (viewId === 'kings' && kingsDeck.length === 0) resetKingsGame();
+            if (viewId === 'bottle') renderBottlePlayers();
+            if (viewId === 'never') nextNeverPrompt();
+            if (viewId === 'wheel') {
+                document.getElementById('wheelCurrentPlayer').textContent = getRandomPlayer();
+                drawWheel();
+            }
+            if (viewId === 'most') nextMostPrompt();
+            if (viewId === 'highlow') initHighLowGame();
+            if (viewId === 'fivesec') {
+                stopFiveSecTimer();
+                nextFiveSecPrompt();
+            }
+            if (viewId === 'coin') document.getElementById('coinCurrentPlayer').textContent = getNextPlayer();
+            if (viewId === 'dice') document.getElementById('diceCurrentPlayer').textContent = getNextPlayer();
+            if (viewId === 'croc') {
+                setTimeout(() => {
+                    initCroc3D();
+                    resetCrocGame();
+                }, 50);
+            }
+        }
+
+        function showResultModal(icon, title, desc) {
+            document.getElementById('resultModalIcon').textContent = icon;
+            document.getElementById('resultModalTitle').textContent = title;
+            document.getElementById('resultModalDesc').textContent = desc;
+            document.getElementById('resultModal').classList.remove('hidden');
+            document.getElementById('resultModal').classList.add('flex');
+        }
+
+        function closeResultModal() {
+            playSound('click');
+            document.getElementById('resultModal').classList.add('hidden');
+            document.getElementById('resultModal').classList.remove('flex');
+        }
+
+        // ==================== 3. เกมที่ 1: ไพ่พระราชา ====================
+        let kingsDeck = [];
+        let kingsDrawnCount = 0;
+        let isCardFlipped = false;
+
+        const kingRules = {
+            'A': { title: 'ดื่มคนเดียว (Waterfall)', desc: 'คนจั่วดื่มก่อน 1 อึก และทุกคนในวงดื่มตามไปเรื่อยๆ ห้ามหยุดจนกว่าคนก่อนหน้าจะหยุด!' },
+            '2': { title: 'แจกเพื่อนดื่ม (You)', desc: 'เลือกเพื่อนในวง 1 คน ให้ดื่ม 1 อึกเน้นๆ!' },
+            '3': { title: 'ตัวฉันเอง (Me)', desc: 'ไม่ต้องมองใคร คนจั่วใบนี้ยกดื่มเองเลย 1 อึก!' },
+            '4': { title: 'สาวๆ ดื่ม (Ladies)', desc: 'ผู้หญิงทุกคนในวงยกแก้วขึ้นดื่มพร้อมกัน! (ถ้าไม่มีผู้หญิง คนจั่วดื่มแทน)' },
+            '5': { title: 'หนุ่มๆ ดื่ม (Guys)', desc: 'ผู้ชายทุกคนในวงยกแก้วขึ้นดื่มพร้อมกัน! (ถ้าไม่มีผู้ชาย คนจั่วดื่มแทน)' },
+            '6': { title: 'เพื่อนซ้ายขวา (Neighbors)', desc: 'คนนั่งทางซ้ายและทางขวาของคนจั่ว ยกดื่มคนละ 1 อึก!' },
+            '7': { title: 'ชูมือขึ้นฟ้า (Heaven)', desc: 'ทุกคนรีบชูมือขึ้น! ใครยกมือช้าที่สุดในวงโดนทำโทษดื่ม 1 อึก!' },
+            '8': { title: 'บัดดี้ร่วมสาบาน (Mate)', desc: 'เลือกบัดดี้ 1 คน จากนี้ไปไม่ว่าใครในคู่โดนดื่ม อีกคนต้องดื่มเป็นเพื่อนด้วย!' },
+            '9': { title: 'คำคล้องจอง (Rhyme)', desc: 'คนจั่วพูดคำขึ้นมา 1 คำ คนถัดไปต่อคำคล้องจอง ใครช้าหรือซ้ำดื่ม!' },
+            '10': { title: 'หมวดหมู่ (Categories)', desc: 'ตั้งหมวดหมู่ขึ้นมา 1 อย่าง (เช่น ยี่ห้อรถ) ผลัดกันพูด ใครคิดไม่ออกดื่ม!' },
+            'J': { title: 'ตั้งกฎใหม่ (Make a Rule)', desc: 'ตั้งกฎอะไรก็ได้ 1 ข้อ (เช่น ห้ามพูดคำว่า "กู") ใครฝ่าฝืนดื่มทันที!' },
+            'Q': { title: 'ห้ามสบตา (Question Master)', desc: 'ห้ามใครตอบคำถามของคนถือไพ่ Q เด็ดขาด ใครเผลอตอบโดนดื่ม!' },
+            'K': { title: 'แก้วพระราชา (King’s Cup)', desc: 'เทเครื่องดื่มของตัวเองลงในแก้วกลาง! คนที่เปิดได้ King ใบที่ 4 ต้องดื่มแก้วกลางทั้งหมด!' }
+        };
+
+        function resetKingsGame() {
+            const suits = [
+                { symbol: '♠', color: 'text-slate-900' },
+                { symbol: '♣', color: 'text-slate-900' },
+                { symbol: '♥', color: 'text-rose-600' },
+                { symbol: '♦', color: 'text-rose-600' }
+            ];
+            const ranks = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+            kingsDeck = [];
+            for (let s of suits) {
+                for (let r of ranks) {
+                    kingsDeck.push({ rank: r, suit: s.symbol, color: s.color });
+                }
+            }
+            for (let i = kingsDeck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [kingsDeck[i], kingsDeck[j]] = [kingsDeck[j], kingsDeck[i]];
+            }
+            kingsDrawnCount = 0;
+            isCardFlipped = false;
+            document.getElementById('kingCardInner').classList.remove('card-flipped');
+            document.getElementById('kingCountText').textContent = '0';
+            document.getElementById('cardsLeftText').textContent = '52';
+            document.getElementById('kingsCurrentPlayer').textContent = getNextPlayer();
+        }
+
+        function drawKingCard() {
+            if (kingsDeck.length === 0) {
+                showResultModal('🃏', 'ไพ่หมดสำรับแล้ว!', 'สับไพ่เริ่มรอบใหม่กันเลย!');
+                resetKingsGame();
+                return;
+            }
+            playSound('card');
+            const cardInner = document.getElementById('kingCardInner');
+            if (isCardFlipped) {
+                cardInner.classList.remove('card-flipped');
+                setTimeout(() => revealNextKingCard(), 260);
+            } else {
+                revealNextKingCard();
+            }
+        }
+
+        function revealNextKingCard() {
+            const card = kingsDeck.pop();
+            const rule = kingRules[card.rank];
+            const currentPlayer = document.getElementById('kingsCurrentPlayer').textContent;
+
+            document.getElementById('cardTopRank').textContent = card.rank;
+            document.getElementById('cardTopRank').className = `text-2xl font-bold leading-none ${card.color}`;
+            document.getElementById('cardTopSuit').textContent = card.suit;
+            document.getElementById('cardTopSuit').className = `text-xl leading-none ${card.color}`;
+            
+            document.getElementById('cardBottomRank').textContent = card.rank;
+            document.getElementById('cardBottomRank').className = `text-2xl font-bold leading-none ${card.color}`;
+            document.getElementById('cardBottomSuit').textContent = card.suit;
+            document.getElementById('cardBottomSuit').className = `text-xl leading-none ${card.color}`;
+
+            document.getElementById('cardCenterSuit').textContent = card.suit;
+            document.getElementById('cardCenterSuit').className = `text-4xl mb-2 ${card.color}`;
+            document.getElementById('cardRuleTitle').textContent = rule.title;
+            document.getElementById('cardRuleDesc').textContent = rule.desc;
+
+            document.getElementById('kingCardInner').classList.add('card-flipped');
+            isCardFlipped = true;
+            document.getElementById('cardsLeftText').textContent = kingsDeck.length;
+
+            if (card.rank === 'K') {
+                kingsDrawnCount++;
+                document.getElementById('kingCountText').textContent = kingsDrawnCount;
+                if (kingsDrawnCount === 4) {
+                    playSound('boom');
+                    setTimeout(() => {
+                        showResultModal('👑', `แจ็กพอต! King ใบที่ 4!`, `${currentPlayer} เปิดได้ King ใบสุดท้าย! รับแก้วกลางไปดื่มให้หมดแก้ว!`);
+                    }, 550);
+                }
+            }
+            document.getElementById('kingsCurrentPlayer').textContent = getNextPlayer();
+        }
+
+        // ==================== 4. เกมที่ 2: จริงหรือท้า ====================
+        let todLevel = 'mild';
+        const todDatabase = {
+            mild: {
+                truth: [
+                    "รักครั้งแรกของคุณเกิดขึ้นตอนอายุเท่าไหร่?",
+                    "เรื่องน่าอายที่สุดที่เคยทำต่อหน้าคนที่แอบชอบคืออะไร?",
+                    "ถ้าติดเกาะร้างแล้วเลือกเพื่อนในวงนี้ไปได้ 1 คน จะเลือกใคร?",
+                    "เคยแอบชอบแฟนของเพื่อนไหม?",
+                    "นิสัยแปลกๆ ที่ทำเวลาอยู่คนเดียวคืออะไร?",
+                    "ดาราหรือไอดอลคนไหนที่คุณอยากเดทด้วยมากที่สุด?",
+                    "เคยโกหกพ่อแม่เรื่องใหญ่ที่สุดคือเรื่องอะไร?",
+                    "ความประทับใจแรกที่มีต่อเพื่อนคนทางซ้ายคืออะไร?",
+                    "ถ้าถูกรางวัลที่ 1 สิ่งแรกที่จะซื้อคืออะไร?",
+                    "เคยแอบหลับในห้องเรียนหรือที่ทำงานแล้วโดนจับได้ไหม?"
+                ],
+                dare: [
+                    "ทำท่าเซ็กซี่ที่สุดในชีวิตค้างไว้ 10 วินาที",
+                    "ให้เพื่อนคนทางขวาโพสต์สเตตัสอะไรก็ได้ลงโซเชียลของคุณ 1 โพสต์",
+                    "ดื่ม 1 อึกโดยห้ามใช้มือจับแก้ว",
+                    "เลียนแบบท่าทางหรือคำพูดติดปากของคนในวง 1 คน จนกว่าเพื่อนจะทายถูก",
+                    "เปิดรูปถ่ายล่าสุดในมือถือให้ทุกคนในวงดู",
+                    "พูดลงท้ายประโยคด้วยคำว่า 'เมี๊ยว' ทุกครั้งจนกว่าจะถึงตาคุณอีกรอบ",
+                    "เต้นท่าไก่ย่างถูกเผา 15 วินาทีกลางวง",
+                    "ส่งสติกเกอร์หัวใจให้คนล่าสุดในแชทไลน์หรือไอจี",
+                    "วิดพื้น 10 ครั้ง หรือยกดื่ม 2 อึกแทน",
+                    "ชมเพื่อนทุกคนในวงคนละ 1 อย่างแบบจริงจังห้ามขำ"
+                ]
+            },
+            spicy: {
+                truth: [
+                    "บอกชื่อคนที่ดูดีที่สุดในวงนี้ตามความคิดของคุณ",
+                    "เคยแอบแซ่บหรือแอบกิ๊กกับคนที่มีเจ้าของแล้วไหม?",
+                    "จูบแรกของคุณเกิดขึ้นที่ไหน และรู้สึกยังไง?",
+                    "เคยส่งข้อความหาแฟนเก่าตอนเมาไหม? ส่งว่าอะไร?",
+                    "ส่วนไหนในร่างกายของเพศตรงข้ามที่คุณมองเป็นอย่างแรก?",
+                    "เคยโกหกเพื่อชิ่งหนีเดทที่แย่ที่สุดไหม?",
+                    "ความลับในอดีตที่ไม่เคยบอกใครในวงนี้เลยคืออะไร?",
+                    "ถ้าต้องจูบคนในวงนี้ 1 คน คุณจะเลือกใคร?",
+                    "เคยแอบเปิดดูมือถือแฟนโดยไม่ได้รับอนุญาตไหม?",
+                    "สเปกคนรักแบบไหนที่เห็นแล้วแพ้ทางสุดๆ?"
+                ],
+                dare: [
+                    "ให้เพื่อนเลือกเบอร์ในมือถือ แล้วโทรไปแกล้งบอกรัก 15 วินาที",
+                    "ป้อนเครื่องดื่มให้เพื่อนคนทางซ้าย 1 อึกแบบสบตากัน",
+                    "เปิดแชทล่าสุดที่คุยกับคนที่กำลังคุยอยู่ให้เพื่อนดู 5 วินาที",
+                    "กระซิบความลับ 1 เรื่องที่ข้างหูเพื่อนคนทางขวา",
+                    "ให้เพื่อนเขียนอะไรก็ได้บนหน้าผากหรือแก้มด้วยปากกา 1 อย่าง",
+                    "ดื่มรวดเดียว 2 อึกเต็มๆ!",
+                    "จ้องตากับเพื่อนคนตรงข้าม 15 วินาที ใครหลบตาก่อนดื่ม!",
+                    "ให้เพื่อนค้นรูปในอัลบั้มมือถือคุณได้ 10 วินาที",
+                    "ทำเสียงครางแบบในหนัง 1 ครั้ง ไม่งั้นดื่ม 2 อึก!",
+                    "โอบไหล่หรือกอดเพื่อนคนทางซ้ายไว้จนกว่าจะถึงตาคุณรอบหน้า"
+                ]
+            },
+            extreme: {
+                truth: [
+                    "สถานที่ที่แปลกหรือตื่นเต้นที่สุดที่คุณเคยมีอะไรกันคือที่ไหน?",
+                    "เคยมี One Night Stand ไหม และจำชื่ออีกฝ่ายได้หรือเปล่า?",
+                    "รสนิยมบนเตียงแบบไหนที่คุณชอบแต่ไม่เคยบอกใคร?",
+                    "เคยแอบคิดเกินเลยกับใครในวงนี้บ้างไหม? ตอบตามตรง!",
+                    "อายุเท่าไหร่ตอนเสียความบริสุทธิ์?",
+                    "เคยดูหนังผู้ใหญ่กับแฟนหรือเพื่อนไหม?",
+                    "ท่าไหนที่คุณชอบที่สุด?",
+                    "เคยแอบถ่ายคลิปหรือรูปเซ็กซี่เก็บไว้ในเครื่องไหม?",
+                    "จำนวนคนที่เคยคบหรือเคยคุยพร้อมกันมากที่สุดคือกี่คน?",
+                    "เคยแกล้งถึงจุดสุดยอดเพื่อให้มันจบๆ ไปไหม?"
+                ],
+                dare: [
+                    "ถอดเสื้อผ้าหรือเครื่องประดับออก 1 ชิ้น (ห้ามเป็นรองเท้าหรือถุงเท้า) ไม่งั้นดื่ม 3 อึก!",
+                    "นั่งตักเพื่อนคนทางขวาจนกว่าจะถึงตาคุณในรอบถัดไป",
+                    "ให้เพื่อน 1 คนป้อนน้ำแข็งใส่ปากคุณ",
+                    "หอมแก้มเพื่อนคนทางซ้าย 1 ที หรือเลือกดื่มหมดแก้ว!",
+                    "เต้นยั่วยวนใส่เพื่อนคนตรงข้าม 15 วินาที",
+                    "ดื่มเพียวๆ 1 ช็อตเต็มๆ เดี๋ยวนี้!",
+                    "ให้เพื่อนเลือกรูปในแกลเลอรีที่ลับที่สุด 1 รูปมาโชว์ให้ดู",
+                    "กระซิบคำพูด 18+ ข้างหูเพื่อนที่นั่งใกล้ที่สุด",
+                    "ทำท่าเลียริมฝีปากแบบยั่วยวนใส่กล้องมือถือเพื่อน 5 วินาที",
+                    "แลกเสื้อหรือของใช้ส่วนตัวกับเพื่อนคนตรงข้ามจนจบเกม"
+                ]
+            }
+        };
+
+        function setTodLevel(lvl) {
+            playSound('click');
+            todLevel = lvl;
+            ['mild', 'spicy', 'extreme'].forEach(l => {
+                const btn = document.getElementById(`lvl-${l}`);
+                if (l === lvl) {
+                    const bg = l === 'mild' ? 'bg-emerald-500 text-slate-950' : (l === 'spicy' ? 'bg-amber-500 text-slate-950' : 'bg-rose-500 text-white');
+                    btn.className = `px-3 py-1 rounded-lg text-xs font-medium transition ${bg}`;
+                } else {
+                    btn.className = 'px-3 py-1 rounded-lg text-xs font-medium text-slate-300 transition';
+                }
+            });
+        }
+
+        function pickTod(type) {
+            playSound('card');
+            const list = todDatabase[todLevel][type];
+            const prompt = list[Math.floor(Math.random() * list.length)];
+            const badge = document.getElementById('todBadge');
+            const textEl = document.getElementById('todPromptText');
+
+            if (type === 'truth') {
+                badge.textContent = `ความจริง • ${todLevel.toUpperCase()}`;
+                badge.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-sky-500/20 text-sky-300 mb-4';
+            } else {
+                badge.textContent = `คำท้า • ${todLevel.toUpperCase()}`;
+                badge.className = 'px-3 py-1 rounded-full text-xs font-semibold bg-pink-500/20 text-pink-300 mb-4';
+            }
+            textEl.textContent = prompt;
+        }
+
+        function nextTodTurn() {
+            playSound('click');
+            document.getElementById('todCurrentPlayer').textContent = getNextPlayer();
+            document.getElementById('todBadge').textContent = 'เลือกโหมดด้านล่าง';
+            document.getElementById('todBadge').className = 'px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-slate-300 mb-4';
+            document.getElementById('todPromptText').innerHTML = 'กดเลือก <span class="text-sky-400">"ความจริง"</span> หรือ <span class="text-pink-400">"คำท้า"</span>';
+        }
+
+        // ==================== 5. เกมที่ 3: หมุนขวดบอกชื่อ ====================
+        let currentBottleRotation = 0;
+        let isBottleSpinning = false;
+
+        function renderBottlePlayers() {
+            const ring = document.getElementById('bottlePlayersRing');
+            if (!ring) return;
+            ring.innerHTML = '';
+
+            const list = players.length > 0 ? players : ["คนที่ 1", "คนที่ 2", "คนที่ 3"];
+            const count = list.length;
+            const radiusPercent = 41; // ระยะห่างจากจุดศูนย์กลาง (%)
+
+            list.forEach((name, idx) => {
+                // เริ่มจากด้านบน (0 องศา = 12 นาฬิกา) ตามเข็มนาฬิกา
+                const angleDeg = (360 / count) * idx;
+                const angleRad = (angleDeg - 90) * (Math.PI / 180);
+                const x = 50 + radiusPercent * Math.cos(angleRad);
+                const y = 50 + radiusPercent * Math.sin(angleRad);
+
+                const badge = document.createElement('div');
+                badge.id = `bottle-player-${idx}`;
+                badge.className = 'absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-slate-900/90 border border-white/15 text-[11px] font-semibold text-slate-200 whitespace-nowrap shadow-md transition-all duration-300';
+                badge.style.left = `${x}%`;
+                badge.style.top = `${y}%`;
+                badge.textContent = name;
+                ring.appendChild(badge);
+            });
+        }
+
+        function spinBottle() {
+            if (isBottleSpinning) return;
+            isBottleSpinning = true;
+            playSound('card');
+
+            const list = players.length > 0 ? players : ["คนที่ 1", "คนที่ 2", "คนที่ 3"];
+            const count = list.length;
+
+            // รีเซ็ตไฮไลต์ชื่อเดิม
+            list.forEach((_, idx) => {
+                const el = document.getElementById(`bottle-player-${idx}`);
+                if (el) {
+                    el.className = 'absolute -translate-x-1/2 -translate-y-1/2 px-2.5 py-1 rounded-full bg-slate-900/90 border border-white/15 text-[11px] font-semibold text-slate-200 whitespace-nowrap shadow-md transition-all duration-300';
+                }
+            });
+
+            const bottle = document.getElementById('bottleElement');
+            const resultText = document.getElementById('bottleResultText');
+            resultText.textContent = "กำลังหมุนหาผู้โชคดี...";
+
+            // สุ่มผู้โชคดีจากรายชื่อโดยตรง แล้วคำนวณองศาให้ปากขวดชี้ไปหาคนนั้นเป๊ะๆ
+            const chosenIndex = Math.floor(Math.random() * count);
+            const targetAngleDeg = (360 / count) * chosenIndex;
+            const currentMod = ((currentBottleRotation % 360) + 360) % 360;
+            const deltaAngle = (targetAngleDeg - currentMod + 360) % 360;
+            const extraSpins = (Math.floor(Math.random() * 4) + 5) * 360;
+
+            currentBottleRotation += extraSpins + deltaAngle;
+            bottle.style.transform = `rotate(${currentBottleRotation}deg)`;
+
+            setTimeout(() => {
+                isBottleSpinning = false;
+                playSound('win');
+
+                const chosenName = list[chosenIndex];
+                const winnerBadge = document.getElementById(`bottle-player-${chosenIndex}`);
+                if (winnerBadge) {
+                    winnerBadge.className = 'absolute -translate-x-1/2 -translate-y-1/2 px-3 py-1.5 rounded-full bg-cyan-500 text-slate-950 border-2 border-white text-xs font-extrabold whitespace-nowrap shadow-lg shadow-cyan-500/50 scale-110 z-20 transition-all duration-300';
+                }
+
+                const missions = [
+                    "ยกแก้วดื่ม 1 อึกเน้นๆ!",
+                    "ตอบคำถามความจริงจากเพื่อน 1 ข้อ!",
+                    "เลือกเพื่อน 1 คนมาชนแก้วแล้วดื่มด้วยกัน!",
+                    "รินเครื่องดื่มให้คนทางซ้าย แล้วดื่มของตัวเอง 1 อึก!",
+                    "โดนบทลงโทษหมดแก้ว!"
+                ];
+                const mission = missions[Math.floor(Math.random() * missions.length)];
+                resultText.textContent = `🎯 ปากขวดชี้ไปที่: ${chosenName}`;
+                showResultModal('🍾', `ปากขวดชี้ไปที่ "${chosenName}"!`, mission);
+            }, 4000);
+        }
+
+        // ==================== 6. เกมที่ 4: ระเบิดเวลาต่อคำ ====================
+        let bombInterval = null;
+        let isBombRunning = false;
+        const bombCategories = [
+            "ยี่ห้อเบียร์ / เครื่องดื่มแอลกอฮอล์", "ชื่อจังหวัดในประเทศไทย", "ชื่อสัตว์ 4 ขา",
+            "ยี่ห้อรถยนต์", "ชื่อผลไม้ไทย", "ชื่อเมนูกับแกล้มในวงเหล้า",
+            "ชื่อดารา / นักร้องไทย", "ชื่อประเทศในทวีปเอเชีย", "ของใช้ในห้องน้ำ",
+            "ชื่ออาหารตามสั่งยอดฮิต", "ยี่ห้อมือถือ / แบรนด์ไอที", "ชื่อสีต่างๆ",
+            "ชื่อทีมฟุตบอลพรีเมียร์ลีก", "ชื่อภาพยนตร์ดัง", "ของที่อยู่ในตู้เย็น"
+        ];
+
+        function startBombGame() {
+            if (isBombRunning) return;
+            isBombRunning = true;
+            playSound('click');
+
+            const cat = bombCategories[Math.floor(Math.random() * bombCategories.length)];
+            document.getElementById('bombCategoryText').textContent = cat;
+            document.getElementById('bombStatusText').textContent = "รีบพูดคำตอบแล้วส่งมือถือต่อให้เพื่อน!";
+            document.getElementById('bombSpark').classList.remove('hidden');
+
+            const btn = document.getElementById('bombActionBtn');
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+            btn.textContent = "กำลังนับถอยหลัง...";
+
+            const durationMs = (Math.floor(Math.random() * 16) + 10) * 1000;
+            const startTime = Date.now();
+            const visual = document.getElementById('bombVisual');
+            let scaleToggle = false;
+
+            bombInterval = setInterval(() => {
+                const elapsed = Date.now() - startTime;
+                if (elapsed >= durationMs) {
+                    stopBombGame();
+                    triggerBombExplosion();
+                } else {
+                    playSound('tick');
+                    scaleToggle = !scaleToggle;
+                    visual.style.transform = scaleToggle ? 'scale(1.08)' : 'scale(1)';
+                }
+            }, 550);
+        }
+
+        function stopBombGame() {
+            if (bombInterval) {
+                clearInterval(bombInterval);
+                bombInterval = null;
+            }
+            isBombRunning = false;
+            document.getElementById('bombSpark').classList.add('hidden');
+            document.getElementById('bombVisual').style.transform = 'scale(1)';
+
+            const btn = document.getElementById('bombActionBtn');
+            btn.disabled = false;
+            btn.classList.remove('opacity-50');
+            btn.textContent = "จุดชนวนระเบิด 🔥";
+        }
+
+        function triggerBombExplosion() {
+            playSound('boom');
+            document.body.classList.add('screen-shake');
+            setTimeout(() => document.body.classList.remove('screen-shake'), 500);
+            document.getElementById('bombStatusText').textContent = "💥 ตูมมม!! ระเบิดลงที่ใครคนนั้นดื่ม!";
+            showResultModal('💥', 'บึ้มมม! หมดเวลา!', 'ใครถือมือถืออยู่ตอนนี้ รับบทลงโทษยกดื่ม 1 แก้วเต็มๆ!');
+        }
+
+        // ==================== 7. เกมที่ 5: ฉันไม่เคย ====================
+        const neverPrompts = [
+            "แอบส่องเฟซบุ๊กหรือไอจีแฟนเก่าตอนเมา", "เมาจนภาพตัด จำไม่ได้ว่ากลับบ้านมายังไง",
+            "แอบชอบแฟนของเพื่อนสนิท", "โกหกว่าป่วยเพื่อลางานหรือโดดเรียน",
+            "ส่งข้อความผิดแชทแล้วต้องรีบกดยกเลิก", "ร้องไห้เพราะเรื่องความรักในวงเหล้า",
+            "แอบกินของกินของเพื่อนในตู้เย็นโดยไม่บอก", "เคยโดนเททั้งๆ ที่ยังไม่ได้คบกัน",
+            "ตื่นมาแล้วพบว่าตัวเองนอนอยู่หน้าห้องน้ำ", "แอบชอบคนที่มีเจ้าของแล้วทั้งๆ ที่รู้",
+            "โกหกเพื่อนว่า 'กำลังจะถึงแล้ว' ทั้งๆ ที่เพิ่งอาบน้ำเสร็จ", "เคยเสียเงินเปย์ให้คนที่ไม่ได้รักเรา",
+            "แอบหลับในวงเหล้าแล้วโดนเพื่อนแกล้งถ่ายรูป", "เคยคืนดีกับแฟนเก่ามากกว่า 2 รอบ",
+            "เคยแอบใช้บัญชี Netflix ของคนอื่นโดยไม่จ่ายเงิน", "เคยอ้วกในร้านเหล้าหรือบนรถเพื่อน"
+        ];
+        let neverIndex = 0;
+
+        function nextNeverPrompt() {
+            playSound('click');
+            const prompt = neverPrompts[neverIndex % neverPrompts.length];
+            neverIndex++;
+            document.getElementById('neverPromptText').textContent = prompt;
+        }
+
+        // ==================== 8. เกมที่ 6: วงล้อบทลงโทษ ====================
+        const wheelSegments = [
+            { label: "ดื่ม 1 อึก", color: "#ec4899" },
+            { label: "รอดตัว!", color: "#10b981" },
+            { label: "หมดแก้ว!", color: "#ef4444" },
+            { label: "สั่งเพื่อนดื่ม", color: "#3b82f6" },
+            { label: "ดื่ม 2 อึก", color: "#f59e0b" },
+            { label: "คนซ้ายดื่ม", color: "#8b5cf6" },
+            { label: "ดื่มเพียว!", color: "#f43f5e" },
+            { label: "ชนทั้งวง!", color: "#06b6d4" }
+        ];
+        let wheelAngle = 0;
+        let isWheelSpinning = false;
+
+        function drawWheel() {
+            const canvas = document.getElementById('wheelCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const numSegments = wheelSegments.length;
+            const arcSize = (2 * Math.PI) / numSegments;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const radius = centerX;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            for (let i = 0; i < numSegments; i++) {
+                const angle = wheelAngle + i * arcSize;
+                ctx.beginPath();
+                ctx.fillStyle = wheelSegments[i].color;
+                ctx.moveTo(centerX, centerY);
+                ctx.arc(centerX, centerY, radius, angle, angle + arcSize);
+                ctx.lineTo(centerX, centerY);
+                ctx.fill();
+
+                ctx.strokeStyle = "rgba(15, 23, 42, 0.4)";
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.save();
+                ctx.translate(centerX, centerY);
+                ctx.rotate(angle + arcSize / 2);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 15px Kanit, sans-serif";
+                ctx.fillText(wheelSegments[i].label, radius - 22, 5);
+                ctx.restore();
+            }
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 20, 0, 2 * Math.PI);
+            ctx.fillStyle = "#090d16";
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = "#ffffff";
+            ctx.stroke();
+        }
+
+        function changeWheelPlayer() {
+            playSound('click');
+            document.getElementById('wheelCurrentPlayer').textContent = getNextPlayer();
+        }
+
+        function spinWheel() {
+            if (isWheelSpinning) return;
+            isWheelSpinning = true;
+            playSound('card');
+
+            const spinVelocity = Math.random() * 0.35 + 0.4;
+            let currentVelocity = spinVelocity;
+            const friction = 0.985;
+
+            function animateWheel() {
+                wheelAngle += currentVelocity;
+                currentVelocity *= friction;
+                drawWheel();
+
+                if (currentVelocity > 0.002) {
+                    requestAnimationFrame(animateWheel);
+                } else {
+                    isWheelSpinning = false;
+                    playSound('win');
+
+                    const numSegments = wheelSegments.length;
+                    const arcSize = (2 * Math.PI) / numSegments;
+                    let normalizedAngle = (1.5 * Math.PI - (wheelAngle % (2 * Math.PI))) % (2 * Math.PI);
+                    if (normalizedAngle < 0) normalizedAngle += 2 * Math.PI;
+                    
+                    const winningIndex = Math.floor(normalizedAngle / arcSize);
+                    const result = wheelSegments[winningIndex];
+                    const player = document.getElementById('wheelCurrentPlayer').textContent;
+
+                    showResultModal('🎡', `ผลลัพธ์ของ ${player}`, `วงล้อหยุดที่: "${result.label}" จัดไปตามนั้นเลย!`);
+                }
+            }
+            requestAnimationFrame(animateWheel);
+        }
+
+        // ==================== 9. เกมที่ 7: ใครในวงที่เป็น... ====================
+        const mostPrompts = [
+            "เมาแล้วชอบโทรหาแฟนเก่ามากที่สุด!",
+            "เจ้าชู้และสับรางเก่งที่สุดในวง!",
+            "มีโอกาสได้แต่งงานเป็นคนแรกของกลุ่ม!",
+            "ขี้งอนและง้อยากที่สุด!",
+            "สายเปย์ ยอมทุ่มไม่อั้นเวลาตกหลุมรัก!",
+            "คออ่อนที่สุดในวงนี้!",
+            "ชอบกลับบ้านก่อนเพื่อนเสมอเวลาไปปาร์ตี้!",
+            "มีโอกาสเป็นเศรษฐีในอนาคตมากที่สุด!",
+            "ชอบเมาแล้วเล่าความลับของตัวเองให้คนอื่นฟัง!",
+            "คลั่งรักแฟนจนลืมเพื่อน!",
+            "แต่งตัวนานที่สุดก่อนออกจากบ้าน!",
+            "ดวงซวยเรื่องความรักมากที่สุดในกลุ่ม!"
+        ];
+        let mostIndex = 0;
+
+        function nextMostPrompt() {
+            playSound('click');
+            document.getElementById('mostPromptText').textContent = mostPrompts[mostIndex % mostPrompts.length];
+            mostIndex++;
+        }
+
+        // ==================== 10. เกมที่ 8: ไพ่สูงหรือต่ำ ====================
+        let hlCurrentCard = null;
+        let hlStreak = 0;
+        const hlRanks = [
+            { label: 'A', val: 1 }, { label: '2', val: 2 }, { label: '3', val: 3 },
+            { label: '4', val: 4 }, { label: '5', val: 5 }, { label: '6', val: 6 },
+            { label: '7', val: 7 }, { label: '8', val: 8 }, { label: '9', val: 9 },
+            { label: '10', val: 10 }, { label: 'J', val: 11 }, { label: 'Q', val: 12 }, { label: 'K', val: 13 }
+        ];
+        const hlSuits = [
+            { symbol: '♠', color: 'text-slate-900' },
+            { symbol: '♣', color: 'text-slate-900' },
+            { symbol: '♥', color: 'text-rose-600' },
+            { symbol: '♦', color: 'text-rose-600' }
+        ];
+
+        function drawRandomHlCard() {
+            const r = hlRanks[Math.floor(Math.random() * hlRanks.length)];
+            const s = hlSuits[Math.floor(Math.random() * hlSuits.length)];
+            return { label: r.label, val: r.val, suit: s.symbol, color: s.color };
+        }
+
+        function renderHlCard(card) {
+            document.getElementById('hlTopRank').textContent = card.label;
+            document.getElementById('hlTopRank').className = `text-2xl font-bold leading-none ${card.color}`;
+            document.getElementById('hlTopSuit').textContent = card.suit;
+            document.getElementById('hlTopSuit').className = `text-xl leading-none ${card.color}`;
+            document.getElementById('hlCenterSuit').textContent = card.suit;
+            document.getElementById('hlCenterSuit').className = `text-6xl ${card.color}`;
+            document.getElementById('hlBottomRank').textContent = card.label;
+            document.getElementById('hlBottomRank').className = `text-2xl font-bold leading-none ${card.color}`;
+            document.getElementById('hlBottomSuit').textContent = card.suit;
+            document.getElementById('hlBottomSuit').className = `text-xl leading-none ${card.color}`;
+        }
+
+        function initHighLowGame() {
+            hlStreak = 0;
+            document.getElementById('hlStreakText').textContent = '0';
+            document.getElementById('hlCurrentPlayer').textContent = getNextPlayer();
+            hlCurrentCard = drawRandomHlCard();
+            renderHlCard(hlCurrentCard);
+        }
+
+        function guessHighLow(guess) {
+            playSound('card');
+            const nextCard = drawRandomHlCard();
+            const isWin = (guess === 'high' && nextCard.val > hlCurrentCard.val) ||
+                          (guess === 'low' && nextCard.val < hlCurrentCard.val);
+
+            hlCurrentCard = nextCard;
+            renderHlCard(hlCurrentCard);
+
+            if (isWin) {
+                hlStreak++;
+                document.getElementById('hlStreakText').textContent = hlStreak;
+                if (hlStreak >= 3) {
+                    playSound('win');
+                    const p = document.getElementById('hlCurrentPlayer').textContent;
+                    showResultModal('🎉', `${p} ทายถูกครบ 3 ครั้ง!`, 'รอดตัวแล้ว! ส่งต่อให้เพื่อนคนถัดไปเล่นได้เลย!');
+                    initHighLowGame();
+                } else {
+                    document.getElementById('hlStatusText').textContent = `ถูกต้อง! ทายอีก ${3 - hlStreak} ครั้งจะรอดตัว!`;
+                }
+            } else {
+                playSound('boom');
+                const p = document.getElementById('hlCurrentPlayer').textContent;
+                showResultModal('🍺', `ทายผิด! ไพ่ออก ${nextCard.label}${nextCard.suit}`, `${p} ทายพลาด! ยกดื่ม 1 อึก แล้วเปลี่ยนตาคนถัดไป!`);
+                initHighLowGame();
+            }
+        }
+
+        // ==================== 11. เกมที่ 9: 5 วิ ตอบให้ทัน! ====================
+        const fiveSecPrompts = [
+            "บอกชื่อยี่ห้อเบียร์ 3 ยี่ห้อ!", "บอกชื่อจังหวัดขึ้นต้นด้วย 'ส' 3 จังหวัด!",
+            "บอกชื่อสัตว์เลื้อยคลาน 3 ชนิด!", "บอกชื่อยี่ห้อรถยนต์ญี่ปุ่น 3 ยี่ห้อ!",
+            "บอกชื่อเมนูอาหารอีสาน 3 เมนู!", "บอกชื่อดาราชายไทย 3 คน!",
+            "บอกชื่อผลไม้สีแดง 3 ชนิด!", "บอกชื่อประเทศในยุโรป 3 ประเทศ!",
+            "บอกชื่อของใช้ในห้องครัว 3 อย่าง!", "บอกชื่อแอปพลิเคชันโซเชียล 3 แอป!",
+            "บอกชื่อกีฬาที่ใช้ลูกบอล 3 ชนิด!", "บอกชื่อเพลงของวง Bodyslam 3 เพลง!"
+        ];
+        let fiveSecIndex = 0;
+        let fiveSecTimer = null;
+
+        function nextFiveSecPrompt() {
+            document.getElementById('fiveSecCurrentPlayer').textContent = getNextPlayer();
+            document.getElementById('fiveSecPromptText').textContent = fiveSecPrompts[fiveSecIndex % fiveSecPrompts.length];
+            fiveSecIndex++;
+            document.getElementById('fiveSecTimerDisplay').textContent = "5.0";
+            document.getElementById('fiveSecStartBtn').classList.remove('hidden');
+            document.getElementById('fiveSecJudgeBtns').classList.add('hidden');
+        }
+
+        function startFiveSecTimer() {
+            playSound('click');
+            document.getElementById('fiveSecStartBtn').classList.add('hidden');
+            document.getElementById('fiveSecJudgeBtns').classList.remove('hidden');
+
+            let timeLeft = 5.0;
+            const display = document.getElementById('fiveSecTimerDisplay');
+
+            fiveSecTimer = setInterval(() => {
+                timeLeft -= 0.1;
+                if (timeLeft <= 0) {
+                    stopFiveSecTimer();
+                    display.textContent = "0.0";
+                    playSound('boom');
+                    showResultModal('⏰', 'หมดเวลา 5 วินาที!', 'ตอบไม่ทันใช่ไหม? ยกแก้วดื่ม 1 อึกเน้นๆ!');
+                } else {
+                    display.textContent = timeLeft.toFixed(1);
+                }
+            }, 100);
+        }
+
+        function stopFiveSecTimer() {
+            if (fiveSecTimer) {
+                clearInterval(fiveSecTimer);
+                fiveSecTimer = null;
+            }
+        }
+
+        function judgeFiveSec(passed) {
+            stopFiveSecTimer();
+            if (passed) {
+                playSound('win');
+                nextFiveSecPrompt();
+            } else {
+                playSound('boom');
+                showResultModal('🍺', 'ตอบไม่ทัน / ลิ้นพัน!', 'รับบทลงโทษยกดื่ม 1 อึก แล้วส่งต่อคนถัดไป!');
+                nextFiveSecPrompt();
+            }
+        }
+
+        // ==================== 12. เกมที่ 10: ทอยเหรียญวัดใจ ====================
+        let isCoinFlipping = false;
+
+        function flipCoin(userGuess) {
+            if (isCoinFlipping) return;
+            isCoinFlipping = true;
+            playSound('card');
+
+            const visual = document.getElementById('coinVisual');
+            visual.style.transform = 'rotateY(1080deg) scale(1.1)';
+            document.getElementById('coinStatusText').textContent = "กำลังดีดเหรียญ...";
+
+            setTimeout(() => {
+                visual.style.transform = 'rotateY(0deg) scale(1)';
+                const result = Math.random() < 0.5 ? 'หัว' : 'ก้อย';
+                document.getElementById('coinEmoji').textContent = result === 'หัว' ? '👑' : '🦅';
+                document.getElementById('coinSideLabel').textContent = result;
+
+                const player = document.getElementById('coinCurrentPlayer').textContent;
+                if (result === userGuess) {
+                    playSound('win');
+                    document.getElementById('coinStatusText').textContent = `ออก "${result}"! ${player} ทายถูก!`;
+                    showResultModal('🪙', `ออก "${result}"! ทายถูก!`, `${player} สั่งเพื่อนในวง 1 คนให้ดื่ม 1 อึกได้เลย!`);
+                } else {
+                    playSound('boom');
+                    document.getElementById('coinStatusText').textContent = `ออก "${result}"! ${player} ทายผิด!`;
+                    showResultModal('🍺', `ออก "${result}"! ทายผิด!`, `${player} ทายพลาด! ยกแก้วดื่มเอง 1 อึก!`);
+                }
+
+                isCoinFlipping = false;
+                document.getElementById('coinCurrentPlayer').textContent = getNextPlayer();
+            }, 750);
+        }
+
+        // ==================== 13. เกมที่ 11: ลูกเต๋ามรณะ ====================
+        let isDiceRolling = false;
+        const diceFaces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+
+        function rollDiceGame() {
+            if (isDiceRolling) return;
+            isDiceRolling = true;
+            playSound('card');
+
+            const d1Box = document.getElementById('dice1Box');
+            const d2Box = document.getElementById('dice2Box');
+            let count = 0;
+
+            const anim = setInterval(() => {
+                d1Box.textContent = diceFaces[Math.floor(Math.random() * 6)];
+                d2Box.textContent = diceFaces[Math.floor(Math.random() * 6)];
+                count++;
+                if (count > 8) {
+                    clearInterval(anim);
+                    const v1 = Math.floor(Math.random() * 6) + 1;
+                    const v2 = Math.floor(Math.random() * 6) + 1;
+                    d1Box.textContent = diceFaces[v1 - 1];
+                    d2Box.textContent = diceFaces[v2 - 1];
+
+                    const sum = v1 + v2;
+                    const player = document.getElementById('diceCurrentPlayer').textContent;
+                    let title = `ได้แต้มรวม ${sum} แต้ม`;
+                    let desc = "";
+
+                    if (v1 === v2) {
+                        playSound('win');
+                        title = `🎉 ออกเบิ้ล ${v1}-${v2}!`;
+                        desc = `${player} แจก ${v1} อึก ให้ใครก็ได้ในวง!`;
+                    } else if (sum === 7) {
+                        playSound('boom');
+                        title = `🔥 อาถรรพ์เลข 7!`;
+                        desc = `รวมได้ 7 แต้ม! ทุกคนในวงยกแก้วขึ้นดื่มพร้อมกัน 1 อึก!`;
+                    } else if (sum === 2 || sum === 12) {
+                        playSound('boom');
+                        title = `💀 แต้มวิกฤต (${sum} แต้ม)!`;
+                        desc = `${player} ดวงดีเกินต้าน ยกดื่มคนเดียว 2 อึกเต็มๆ!`;
+                    } else if (sum % 2 === 0) {
+                        playSound('click');
+                        desc = `เลขคู่ (${sum} แต้ม) — คนนั่งทางซ้ายของ ${player} ดื่ม 1 อึก!`;
+                    } else {
+                        playSound('click');
+                        desc = `เลขคี่ (${sum} แต้ม) — คนนั่งทางขวาของ ${player} ดื่ม 1 อึก!`;
+                    }
+
+                    document.getElementById('diceRuleTitle').textContent = title;
+                    document.getElementById('diceRuleDesc').textContent = desc;
+                    showResultModal('🎲', title, desc);
+
+                    isDiceRolling = false;
+                    document.getElementById('diceCurrentPlayer').textContent = getNextPlayer();
+                }
+            }, 70);
+        }
+
+        // ==================== 14. เกมที่ 12: งับนิ้วจระเข้ 3D (Three.js) ====================
+        let crocScene, crocCamera, crocRenderer, crocUpperJaw, crocLowerJaw;
+        let crocTeethMeshes = [];
+        let crocTrapIndex = 0;
+        let crocGameOver = false;
+        let crocJawTargetAngle = 0.52;
+        let crocJawCurrentAngle = 0.52;
+        let crocAnimInitialized = false;
+        const crocRaycaster = new THREE.Raycaster();
+        const crocMouse = new THREE.Vector2();
+
+        function initCroc3D() {
+            const container = document.getElementById('croc3dContainer');
+            if (!container) return;
+
+            if (!crocRenderer) {
+                crocScene = new THREE.Scene();
+
+                const width = container.clientWidth || 320;
+                const height = container.clientHeight || 350;
+                crocCamera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
+                crocCamera.position.set(0, 2.3, 6.2);
+                crocCamera.lookAt(0, 0.2, 0.5);
+
+                crocRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                crocRenderer.setSize(width, height);
+                crocRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                container.innerHTML = '';
+                container.appendChild(crocRenderer.domElement);
+
+                // แสงสว่างในฉาก 3D
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+                crocScene.add(ambientLight);
+
+                const dirLight = new THREE.DirectionalLight(0xffffff, 0.95);
+                dirLight.position.set(4, 8, 6);
+                crocScene.add(dirLight);
+
+                const rimLight = new THREE.PointLight(0x34d399, 0.7, 15);
+                rimLight.position.set(-4, 3, 4);
+                crocScene.add(rimLight);
+
+                // วัสดุจระเข้
+                const skinMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.45, metalness: 0.1 });
+                const darkSkinMat = new THREE.MeshStandardMaterial({ color: 0x047857, roughness: 0.55 });
+                const gumMat = new THREE.MeshStandardMaterial({ color: 0xf43f5e, roughness: 0.6 });
+                const eyeWhiteMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, roughness: 0.2 });
+                const pupilMat = new THREE.MeshStandardMaterial({ color: 0x090d16, roughness: 0.1 });
+
+                // === กรามล่าง (Lower Jaw) ===
+                crocLowerJaw = new THREE.Group();
+                const lowerSnout = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.42, 3.4), skinMat);
+                lowerSnout.position.set(0, -0.22, 1.3);
+                crocLowerJaw.add(lowerSnout);
+
+                // ลิ้นสีชมพูด้านใน
+                const tongue = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.16, 2.7), gumMat);
+                tongue.position.set(0, 0.02, 1.2);
+                crocLowerJaw.add(tongue);
+
+                // สร้างฟัน 10 ซี่บนกรามล่าง (ซ้าย 5 ซี่, ขวา 5 ซี่)
+                crocTeethMeshes = [];
+                const toothGeo = new THREE.ConeGeometry(0.14, 0.38, 12);
+
+                for (let i = 0; i < 10; i++) {
+                    const isLeft = i < 5;
+                    const rowIdx = i % 5;
+                    const xPos = isLeft ? -0.82 : 0.82;
+                    const zPos = 0.55 + rowIdx * 0.52;
+
+                    const toothMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2 });
+                    const tooth = new THREE.Mesh(toothGeo, toothMat);
+                    tooth.position.set(xPos, 0.2, zPos);
+                    tooth.userData = { index: i, pressed: false, baseY: 0.2 };
+                    crocLowerJaw.add(tooth);
+                    crocTeethMeshes.push(tooth);
+                }
+
+                crocScene.add(crocLowerJaw);
+
+                // === กรามบน (Upper Jaw) ===
+                crocUpperJaw = new THREE.Group();
+                crocUpperJaw.position.set(0, 0.15, -0.2);
+
+                const upperSnout = new THREE.Mesh(new THREE.BoxGeometry(2.35, 0.48, 3.45), skinMat);
+                upperSnout.position.set(0, 0.24, 1.5);
+                crocUpperJaw.add(upperSnout);
+
+                // สันจมูกและปุ่มเกล็ด
+                const ridge = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.15, 2.8), darkSkinMat);
+                ridge.position.set(0, 0.52, 1.4);
+                crocUpperJaw.add(ridge);
+
+                // ดวงตาจระเข้ 2 ข้าง
+                [-0.75, 0.75].forEach(eyeX => {
+                    const eyeSocket = new THREE.Mesh(new THREE.SphereGeometry(0.34, 16, 16), darkSkinMat);
+                    eyeSocket.position.set(eyeX, 0.62, 0.45);
+                    crocUpperJaw.add(eyeSocket);
+
+                    const eyeball = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 16), eyeWhiteMat);
+                    eyeball.position.set(eyeX, 0.66, 0.62);
+                    crocUpperJaw.add(eyeball);
+
+                    const pupil = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.26, 0.1), pupilMat);
+                    pupil.position.set(eyeX, 0.66, 0.84);
+                    crocUpperJaw.add(pupil);
+                });
+
+                // รูจมูกปลายปาก
+                [-0.45, 0.45].forEach(nosX => {
+                    const nostril = new THREE.Mesh(new THREE.SphereGeometry(0.12, 12, 12), darkSkinMat);
+                    nostril.position.set(nosX, 0.5, 2.95);
+                    crocUpperJaw.add(nostril);
+                });
+
+                // ฟันบนประดับ (ไม่ให้กด)
+                const upperToothGeo = new THREE.ConeGeometry(0.11, 0.28, 10);
+                const upperToothMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.3 });
+                for (let i = 0; i < 4; i++) {
+                    [-0.95, 0.95].forEach(ux => {
+                        const uTooth = new THREE.Mesh(upperToothGeo, upperToothMat);
+                        uTooth.rotation.x = Math.PI;
+                        uTooth.position.set(ux, -0.08, 0.9 + i * 0.65);
+                        crocUpperJaw.add(uTooth);
+                    });
+                }
+
+                crocScene.add(crocUpperJaw);
+
+                // Event แตะ/คลิกเลือกซี่ฟันใน 3D
+                const handleCrocPointer = (clientX, clientY) => {
+                    if (crocGameOver) return;
+                    const rect = crocRenderer.domElement.getBoundingClientRect();
+                    crocMouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+                    crocMouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+                    crocRaycaster.setFromCamera(crocMouse, crocCamera);
+                    const intersects = crocRaycaster.intersectObjects(crocTeethMeshes);
+                    if (intersects.length > 0) {
+                        const hitTooth = intersects[0].object;
+                        pressCrocTooth3D(hitTooth);
+                    }
+                };
+
+                crocRenderer.domElement.addEventListener('pointerdown', (e) => {
+                    handleCrocPointer(e.clientX, e.clientY);
+                });
+
+                window.addEventListener('resize', () => {
+                    if (!container || !crocRenderer) return;
+                    const w = container.clientWidth;
+                    const h = container.clientHeight;
+                    if (w > 0 && h > 0) {
+                        crocCamera.aspect = w / h;
+                        crocCamera.updateProjectionMatrix();
+                        crocRenderer.setSize(w, h);
+                    }
+                });
+            } else {
+                const w = container.clientWidth || 320;
+                const h = container.clientHeight || 350;
+                crocCamera.aspect = w / h;
+                crocCamera.updateProjectionMatrix();
+                crocRenderer.setSize(w, h);
+            }
+
+            if (!crocAnimInitialized) {
+                crocAnimInitialized = true;
+                animateCroc3D();
+            }
+        }
+
+        function animateCroc3D() {
+            requestAnimationFrame(animateCroc3D);
+            if (!crocRenderer || !crocScene || !crocCamera) return;
+
+            crocJawCurrentAngle += (crocJawTargetAngle - crocJawCurrentAngle) * 0.22;
+            if (crocUpperJaw) {
+                crocUpperJaw.rotation.x = -crocJawCurrentAngle;
+            }
+
+            const t = performance.now() * 0.002;
+            if (crocLowerJaw && crocUpperJaw) {
+                const sway = Math.sin(t) * 0.06;
+                crocLowerJaw.rotation.y = sway;
+                crocUpperJaw.rotation.y = sway;
+            }
+
+            crocRenderer.render(crocScene, crocCamera);
+        }
+
+        function resetCrocGame() {
+            crocTrapIndex = Math.floor(Math.random() * 10);
+            crocGameOver = false;
+            crocJawTargetAngle = 0.55;
+            document.getElementById('crocStatusText').textContent = "แตะที่ซี่ฟันในปากจระเข้ 3D คนละ 1 ซี่!";
+
+            crocTeethMeshes.forEach(tooth => {
+                tooth.userData.pressed = false;
+                tooth.position.y = tooth.userData.baseY;
+                tooth.material.color.setHex(0xffffff);
+            });
+        }
+
+        function pressCrocTooth3D(toothMesh) {
+            if (crocGameOver || toothMesh.userData.pressed) return;
+            toothMesh.userData.pressed = true;
+            const index = toothMesh.userData.index;
+
+            if (index === crocTrapIndex) {
+                crocGameOver = true;
+                crocJawTargetAngle = 0.02;
+                toothMesh.position.y = 0.04;
+                toothMesh.material.color.setHex(0xf43f5e);
+
+                playSound('boom');
+                document.body.classList.add('screen-shake');
+                setTimeout(() => document.body.classList.remove('screen-shake'), 500);
+
+                document.getElementById('crocStatusText').textContent = "งับเข้าให้เต็มๆ!! โดนแล้วเพื่อน!";
+                setTimeout(() => {
+                    showResultModal('🐊', 'งับเข้าให้เต็มๆ!', 'คุณกดโดนซี่กับดัก! ยกแก้วดื่มให้หมดแก้ว ณ บัดนี้!');
+                }, 300);
+            } else {
+                playSound('click');
+                toothMesh.position.y = 0.05;
+                toothMesh.material.color.setHex(0x6ee7b7);
+            }
+        }
+
+        window.onload = function() {
+            updatePlayerBadge();
+            drawWheel();
+            renderBottlePlayers();
+        };
+    </script>
+</body>
+</html>
