@@ -110,7 +110,7 @@
             </div>
             <div>
                 <h1 class="text-lg font-bold tracking-tight text-white leading-none">PARTY DRINK</h1>
-                <p class="text-[11px] text-slate-400 font-light mt-0.5">รวม 12 เกมวงเหล้าสุดมันส์</p>
+                <p class="text-[11px] text-slate-400 font-light mt-0.5">รวม 13 เกมวงเหล้า & ป็อกเด้งสด</p>
             </div>
         </div>
 
@@ -135,9 +135,24 @@
             <div class="pt-1 flex items-end justify-between">
                 <div>
                     <h2 class="text-2xl font-bold text-white">เลือกเกมที่จะเล่น 🍻</h2>
-                    <p class="text-xs text-slate-400 font-light mt-0.5">รวมครบ 12 เกมฮิต แตะที่เกมเพื่อเริ่มสนุกได้เลย</p>
+                    <p class="text-xs text-slate-400 font-light mt-0.5">รวมครบ 13 เกมฮิต เล่นเครื่องเดียวหรือเชื่อมหลายเครื่องได้</p>
                 </div>
             </div>
+
+            <!-- ปุ่มเด่น: ป็อกเด้งออนไลน์หลายเครื่อง -->
+            <button onclick="navigateTo('pokdeng')" class="w-full glass-card glass-card-hover p-4 rounded-3xl text-left flex items-center justify-between border border-emerald-500/30 bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-transparent">
+                <div class="flex items-center gap-3.5">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl shadow-inner">🂡</div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-bold text-base text-white">ป็อกเด้งออนไลน์ (หลายเครื่อง)</h3>
+                            <span class="px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-extrabold animate-pulse">LIVE</span>
+                        </div>
+                        <p class="text-xs text-slate-300 font-light mt-0.5">สร้างห้อง 4 หลัก ชวนเพื่อนจอยจากมือถือเล่นสดพร้อมกัน!</p>
+                    </div>
+                </div>
+                <i class="fa-solid fa-chevron-right text-emerald-400 text-sm"></i>
+            </button>
 
             <!-- ตารางเลือกเกม 12 เกม -->
             <div class="w-full grid grid-cols-2 gap-3">
@@ -689,6 +704,108 @@
             </div>
         </section>
 
+        <!-- ==================== เกมที่ 13: ป็อกเด้งออนไลน์หลายเครื่อง (MULTIPLAYER POKDENG) ==================== -->
+        <section id="view-pokdeng" class="hidden flex-col flex-1 justify-between space-y-4">
+            <div class="flex items-center justify-between">
+                <button onclick="leavePokdengRoom(); navigateTo('home')" class="h-10 px-4 rounded-2xl glass-card text-slate-300 text-sm font-medium hover:text-white flex items-center gap-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i> กลับ
+                </button>
+                <div id="pdRoomBadge" class="hidden px-3 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold flex items-center gap-2">
+                    <span>ห้อง: <span id="pdRoomCodeDisplay" class="text-white tracking-widest">----</span></span>
+                    <button onclick="copyPokdengCode()" class="text-emerald-200 hover:text-white" title="คัดลอกรหัสห้อง"><i class="fa-regular fa-copy"></i></button>
+                </div>
+            </div>
+
+            <!-- หน้าล็อบบี้: สร้างห้อง / เข้าร่วมห้อง -->
+            <div id="pdLobbyView" class="flex-1 flex flex-col justify-center space-y-4 my-auto">
+                <div class="glass-card rounded-3xl p-6 space-y-4 text-center">
+                    <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl mx-auto">🂡</div>
+                    <div>
+                        <h3 class="text-2xl font-bold text-white">ป็อกเด้งวงเหล้าออนไลน์</h3>
+                        <p class="text-xs text-slate-400 font-light mt-1">เชื่อมมือถือหลายเครื่องเข้าห้องเดียวกัน แจกไพ่และเปิดไพ่สดๆ</p>
+                    </div>
+
+                    <div class="text-left space-y-1.5 pt-2">
+                        <label class="text-xs text-slate-300 font-medium">ชื่อเล่นของคุณในวง</label>
+                        <input type="text" id="pdPlayerNameInput" placeholder="พิมพ์ชื่อเล่นของคุณ..." maxlength="12"
+                            class="w-full bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400">
+                    </div>
+
+                    <button onclick="createPokdengRoom()" class="w-full h-14 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-95 text-slate-950 font-bold text-base shadow-lg shadow-emerald-500/20 active:scale-95 transition">
+                        สร้างห้องใหม่ (เป็นเจ้ามือ) 👑
+                    </button>
+
+                    <div class="relative flex py-1 items-center">
+                        <div class="flex-grow border-t border-white/10"></div>
+                        <span class="flex-shrink mx-3 text-xs text-slate-500">หรือเข้าร่วมห้องเพื่อน</span>
+                        <div class="flex-grow border-t border-white/10"></div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <input type="text" id="pdJoinCodeInput" placeholder="รหัส 4 หลัก" maxlength="4" inputmode="numeric"
+                            class="w-36 bg-white/5 border border-white/15 rounded-2xl px-4 py-3 text-center text-base font-bold tracking-widest text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400">
+                        <button onclick="joinPokdengRoom()" class="flex-1 h-13 rounded-2xl glass-card hover:bg-white/10 text-emerald-400 font-bold text-sm border border-emerald-500/30 active:scale-95 transition">
+                            เข้าร่วมห้อง 🚪
+                        </button>
+                    </div>
+                </div>
+                <p id="pdLobbyStatus" class="text-center text-xs text-slate-400">กำลังเชื่อมต่อเซิร์ฟเวอร์...</p>
+            </div>
+
+            <!-- หน้าโต๊ะเล่นป็อกเด้งสด -->
+            <div id="pdTableView" class="hidden flex-1 flex-col justify-between space-y-3">
+                <!-- แถบแจ้งสถานะรอบเกม -->
+                <div class="glass-card rounded-2xl px-4 py-2.5 flex items-center justify-between">
+                    <span id="pdRoundStatusText" class="text-xs font-semibold text-amber-300">รอผู้เล่นเข้าห้อง...</span>
+                    <span id="pdPlayerCountText" class="text-[11px] text-slate-400">1 คนในห้อง</span>
+                </div>
+
+                <!-- รายชื่อผู้เล่นทุกคนในห้อง + ไพ่ของแต่ละคน -->
+                <div id="pdOpponentsGrid" class="grid grid-cols-2 gap-2.5 max-h-[250px] overflow-y-auto pr-0.5">
+                    <!-- การ์ดผู้เล่นในห้องจะถูกเรนเดอร์ที่นี่ -->
+                </div>
+
+                <!-- พื้นที่ไพ่ในมือของคุณเอง -->
+                <div class="glass-card rounded-3xl p-4 border border-emerald-500/25 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-[11px] text-slate-400">ไพ่ในมือคุณ (<span id="pdMyRoleLabel">ลูกขา</span>)</span>
+                            <h4 id="pdMyHandScore" class="text-base font-bold text-emerald-400">รอเจ้ามือแจกไพ่...</h4>
+                        </div>
+                        <span id="pdMyStatusBadge" class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-white/10 text-slate-300">รอเริ่ม</span>
+                    </div>
+
+                    <!-- ไพ่ 2-3 ใบของคุณ -->
+                    <div id="pdMyCardsContainer" class="flex items-center justify-center gap-3 min-h-[112px]">
+                        <div class="w-20 h-28 rounded-xl border border-dashed border-white/20 flex items-center justify-center text-slate-500 text-xs">รอแจกไพ่</div>
+                    </div>
+
+                    <!-- ปุ่มควบคุมของเจ้ามือ และ ปุ่มจั่ว/อยู่ ของผู้เล่น -->
+                    <div id="pdActionControls" class="pt-1">
+                        <!-- ปุ่มสำหรับคนเล่น (จั่ว / อยู่) -->
+                        <div id="pdPlayerTurnBtns" class="hidden grid grid-cols-2 gap-2.5">
+                            <button onclick="pdPlayerStay()" class="h-12 rounded-2xl glass-card hover:bg-white/10 text-white font-bold text-sm active:scale-95 transition">
+                                อยู่ (ไม่จั่ว) ✋
+                            </button>
+                            <button onclick="pdPlayerDraw()" class="h-12 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm shadow-lg shadow-amber-400/20 active:scale-95 transition">
+                                จั่วไพ่ใบที่ 3 🃏
+                            </button>
+                        </div>
+
+                        <!-- ปุ่มสำหรับเจ้ามือ (แจกไพ่ / เปิดไพ่ตัดสิน) -->
+                        <div id="pdHostControls" class="hidden space-y-2">
+                            <button id="pdDealBtn" onclick="pdHostDeal()" class="w-full h-12 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-bold text-sm shadow-lg active:scale-95 transition">
+                                แจกไพ่เริ่มรอบใหม่ 🃏
+                            </button>
+                            <button id="pdRevealBtn" onclick="pdHostRevealAll()" class="hidden w-full h-12 rounded-2xl bg-gradient-to-r from-fuchsia-600 to-violet-600 text-white font-bold text-sm shadow-lg active:scale-95 transition">
+                                เปิดไพ่ทุกคน & ตัดสินผลดื่ม! 🍻
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <!-- ==================== FOOTER ==================== -->
@@ -736,6 +853,477 @@
     </div>
 
     <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ตั้งค่า Firebase สำหรับระบบป็อกเด้งหลายเครื่องเรียลไทม์
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'party-drink-pokdeng';
+        let db = null;
+        let auth = null;
+        let currentUserId = null;
+        let pdRoomUnsubscribe = null;
+        let pdCurrentRoomCode = null;
+        let pdRoomData = null;
+
+        async function initFirebaseMultiplayer() {
+            try {
+                if (typeof __firebase_config === 'undefined') {
+                    document.getElementById('pdLobbyStatus').textContent = "โหมดออฟไลน์: ไม่พบการตั้งค่าระบบออนไลน์";
+                    return;
+                }
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                currentUserId = auth.currentUser?.uid || ('user_' + Math.random().toString(36).substring(2, 9));
+                document.getElementById('pdLobbyStatus').textContent = "🟢 เชื่อมต่อระบบออนไลน์พร้อมเล่นหลายเครื่องแล้ว";
+            } catch (err) {
+                console.error("Firebase init error:", err);
+                document.getElementById('pdLobbyStatus').textContent = "⚠️ เชื่อมต่อเซิร์ฟเวอร์ขัดข้อง ลองรีเฟรชหน้าเว็บ";
+            }
+        }
+        initFirebaseMultiplayer();
+
+        // ฟังก์ชันสร้างสำรับไพ่ 52 ใบและคำนวณแต้มป็อกเด้ง
+        function createShuffledDeck() {
+            const suits = ['♠', '♥', '♦', '♣'];
+            const ranks = [
+                { label: 'A', val: 1, order: 1 }, { label: '2', val: 2, order: 2 },
+                { label: '3', val: 3, order: 3 }, { label: '4', val: 4, order: 4 },
+                { label: '5', val: 5, order: 5 }, { label: '6', val: 6, order: 6 },
+                { label: '7', val: 7, order: 7 }, { label: '8', val: 8, order: 8 },
+                { label: '9', val: 9, order: 9 }, { label: '10', val: 0, order: 10 },
+                { label: 'J', val: 0, order: 11 }, { label: 'Q', val: 0, order: 12 },
+                { label: 'K', val: 0, order: 13 }
+            ];
+            const deck = [];
+            for (const s of suits) {
+                for (const r of ranks) {
+                    deck.push({ label: r.label, suit: s, val: r.val, order: r.order });
+                }
+            }
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+            return deck;
+        }
+
+        function evaluatePokdengHand(cards) {
+            if (!cards || cards.length < 2) return { rankScore: 0, points: 0, deng: 1, label: 'รอไพ่', isPok: false };
+
+            const sumPoints = cards.reduce((acc, c) => acc + c.val, 0) % 10;
+            const sameSuit = cards.every(c => c.suit === cards[0].suit);
+            const sameRank = cards.every(c => c.label === cards[0].label);
+
+            // เช็กป็อก 8 / ป็อก 9 (เฉพาะ 2 ใบแรก)
+            if (cards.length === 2 && (sumPoints === 8 || sumPoints === 9)) {
+                const deng = (sameSuit || sameRank) ? 2 : 1;
+                return {
+                    rankScore: 1000 + sumPoints * 10 + deng,
+                    points: sumPoints,
+                    deng: deng,
+                    label: `ป็อก ${sumPoints}${deng > 1 ? ` (${deng} เด้ง)` : ''}`,
+                    isPok: true
+                };
+            }
+
+            // เช็กไพ่พิเศษ 3 ใบ
+            if (cards.length === 3) {
+                // ตอง
+                if (sameRank) {
+                    return { rankScore: 900 + cards[0].order, points: sumPoints, deng: 5, label: `ตอง ${cards[0].label} (5 เด้ง)`, isPok: false };
+                }
+                // เรียง / สเตรทฟลัช
+                const sorted = [...cards].sort((a, b) => a.order - b.order);
+                const isStraight = (sorted[1].order === sorted[0].order + 1 && sorted[2].order === sorted[1].order + 1) ||
+                                   (sorted[0].order === 1 && sorted[1].order === 12 && sorted[2].order === 13);
+                if (isStraight && sameSuit) {
+                    return { rankScore: 850 + sorted[2].order, points: sumPoints, deng: 5, label: `สเตรทฟลัช (5 เด้ง)`, isPok: false };
+                }
+                if (isStraight) {
+                    return { rankScore: 800 + sorted[2].order, points: sumPoints, deng: 3, label: `ไพ่เรียง (3 เด้ง)`, isPok: false };
+                }
+                // เซียน (J, Q, K ทั้ง 3 ใบ)
+                const allCourt = cards.every(c => ['J', 'Q', 'K'].includes(c.label));
+                if (allCourt) {
+                    return { rankScore: 750, points: 0, deng: 3, label: `สามเหลือง/เซียน (3 เด้ง)`, isPok: false };
+                }
+            }
+
+            // แต้มปกติ
+            let deng = 1;
+            if (cards.length === 2 && (sameSuit || sameRank)) deng = 2;
+            if (cards.length === 3 && sameSuit) deng = 3;
+
+            return {
+                rankScore: sumPoints * 10 + deng,
+                points: sumPoints,
+                deng: deng,
+                label: sumPoints === 0 ? `บอด${deng > 1 ? ` (${deng} เด้ง)` : ''}` : `${sumPoints} แต้ม${deng > 1 ? ` (${deng} เด้ง)` : ''}`,
+                isPok: false
+            };
+        }
+
+        function getRoomDocRef(code) {
+            return doc(db, 'artifacts', appId, 'public', 'data', 'pokdeng_rooms', code);
+        }
+
+        window.createPokdengRoom = async function() {
+            if (!db || !currentUserId) {
+                showResultModal('⚠️', 'กำลังเชื่อมต่อ', 'กรุณารอสักครู่ให้ระบบออนไลน์เชื่อมต่อเสร็จก่อนครับ');
+                return;
+            }
+            playSound('click');
+            const nameInput = document.getElementById('pdPlayerNameInput').value.trim();
+            const playerName = nameInput || (players[0] || 'เจ้ามือ');
+            const roomCode = Math.floor(1000 + Math.random() * 9000).toString();
+
+            const initialRoom = {
+                roomCode: roomCode,
+                hostId: currentUserId,
+                status: 'waiting', // waiting | playing | revealed
+                deck: [],
+                players: {
+                    [currentUserId]: {
+                        uid: currentUserId,
+                        name: playerName,
+                        cards: [],
+                        doneTurn: false,
+                        joinedAt: Date.now()
+                    }
+                }
+            };
+
+            try {
+                await setDoc(getRoomDocRef(roomCode), initialRoom);
+                subscribeToPokdengRoom(roomCode);
+            } catch (e) {
+                console.error(e);
+                showResultModal('❌', 'สร้างห้องไม่สำเร็จ', 'กรุณาลองกดสร้างห้องใหม่อีกครั้งครับ');
+            }
+        };
+
+        window.joinPokdengRoom = async function() {
+            if (!db || !currentUserId) {
+                showResultModal('⚠️', 'กำลังเชื่อมต่อ', 'กรุณารอสักครู่ให้ระบบออนไลน์เชื่อมต่อเสร็จก่อนครับ');
+                return;
+            }
+            playSound('click');
+            const code = document.getElementById('pdJoinCodeInput').value.trim();
+            if (code.length !== 4) {
+                showResultModal('🔢', 'รหัสห้องไม่ถูกต้อง', 'กรุณากรอกรหัสห้องตัวเลข 4 หลักที่ได้รับจากเพื่อน');
+                return;
+            }
+
+            const nameInput = document.getElementById('pdPlayerNameInput').value.trim();
+            const playerName = nameInput || `ผู้เล่น_${Math.floor(Math.random() * 99)}`;
+
+            try {
+                const ref = getRoomDocRef(code);
+                const snap = await getDoc(ref);
+                if (!snap.exists()) {
+                    showResultModal('🔍', 'ไม่พบห้องนี้', `ไม่พบห้องหมายเลข ${code} กรุณาตรวจสอบรหัสอีกครั้ง`);
+                    return;
+                }
+
+                await updateDoc(ref, {
+                    [`players.${currentUserId}`]: {
+                        uid: currentUserId,
+                        name: playerName,
+                        cards: [],
+                        doneTurn: true,
+                        joinedAt: Date.now()
+                    }
+                });
+                subscribeToPokdengRoom(code);
+            } catch (e) {
+                console.error(e);
+                showResultModal('❌', 'เข้าห้องไม่สำเร็จ', 'เกิดข้อผิดพลาดในการเชื่อมต่อห้อง');
+            }
+        };
+
+        function subscribeToPokdengRoom(code) {
+            if (pdRoomUnsubscribe) pdRoomUnsubscribe();
+            pdCurrentRoomCode = code;
+
+            document.getElementById('pdLobbyView').classList.add('hidden');
+            document.getElementById('pdTableView').classList.remove('hidden');
+            document.getElementById('pdTableView').classList.add('flex');
+            document.getElementById('pdRoomBadge').classList.remove('hidden');
+            document.getElementById('pdRoomCodeDisplay').textContent = code;
+
+            pdRoomUnsubscribe = onSnapshot(getRoomDocRef(code), (snap) => {
+                if (!snap.exists()) {
+                    showResultModal('🚪', 'ห้องถูกปิดแล้ว', 'เจ้ามือได้ปิดห้องเกมนี้แล้ว');
+                    leavePokdengRoom();
+                    return;
+                }
+                pdRoomData = snap.data();
+                renderPokdengTable();
+            }, (err) => {
+                console.error("Snapshot error:", err);
+            });
+        }
+
+        window.leavePokdengRoom = function() {
+            if (pdRoomUnsubscribe) {
+                pdRoomUnsubscribe();
+                pdRoomUnsubscribe = null;
+            }
+            pdCurrentRoomCode = null;
+            pdRoomData = null;
+            document.getElementById('pdLobbyView').classList.remove('hidden');
+            document.getElementById('pdTableView').classList.add('hidden');
+            document.getElementById('pdTableView').classList.remove('flex');
+            document.getElementById('pdRoomBadge').classList.add('hidden');
+        };
+
+        window.copyPokdengCode = function() {
+            if (!pdCurrentRoomCode) return;
+            const temp = document.createElement('input');
+            temp.value = pdCurrentRoomCode;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            playSound('click');
+            showResultModal('📋', `คัดลอกรหัสห้อง ${pdCurrentRoomCode} แล้ว!`, 'ส่งรหัส 4 หลักนี้ให้เพื่อนกรอกเข้าห้องได้เลย!');
+        };
+
+        // เจ้ามือแจกไพ่ทุกคนในห้อง
+        window.pdHostDeal = async function() {
+            if (!pdRoomData || pdRoomData.hostId !== currentUserId) return;
+            playSound('card');
+
+            const deck = createShuffledDeck();
+            const updatedPlayers = {};
+            const pList = Object.values(pdRoomData.players);
+
+            pList.forEach(p => {
+                const c1 = deck.pop();
+                const c2 = deck.pop();
+                const hand = [c1, c2];
+                const evalRes = evaluatePokdengHand(hand);
+                updatedPlayers[p.uid] = {
+                    ...p,
+                    cards: hand,
+                    doneTurn: evalRes.isPok // ถ้าป็อก 8/9 ถือว่าจบเทิร์นทันที
+                };
+            });
+
+            await updateDoc(getRoomDocRef(pdCurrentRoomCode), {
+                status: 'playing',
+                deck: deck,
+                players: updatedPlayers
+            });
+        };
+
+        // ผู้เล่นจั่วไพ่ใบที่ 3
+        window.pdPlayerDraw = async function() {
+            if (!pdRoomData || pdRoomData.status !== 'playing') return;
+            const me = pdRoomData.players[currentUserId];
+            if (!me || me.doneTurn || me.cards.length >= 3) return;
+
+            playSound('card');
+            const deck = [...pdRoomData.deck];
+            const card3 = deck.pop();
+            const newCards = [...me.cards, card3];
+
+            await updateDoc(getRoomDocRef(pdCurrentRoomCode), {
+                deck: deck,
+                [`players.${currentUserId}.cards`]: newCards,
+                [`players.${currentUserId}.doneTurn`]: true
+            });
+        };
+
+        // ผู้เล่นเลือกอยู่ (ไม่จั่ว)
+        window.pdPlayerStay = async function() {
+            if (!pdRoomData || pdRoomData.status !== 'playing') return;
+            const me = pdRoomData.players[currentUserId];
+            if (!me || me.doneTurn) return;
+
+            playSound('click');
+            await updateDoc(getRoomDocRef(pdCurrentRoomCode), {
+                [`players.${currentUserId}.doneTurn`]: true
+            });
+        };
+
+        // เจ้ามือสั่งเปิดไพ่ตัดสินผลทั้งหมด
+        window.pdHostRevealAll = async function() {
+            if (!pdRoomData || pdRoomData.hostId !== currentUserId) return;
+            playSound('win');
+            await updateDoc(getRoomDocRef(pdCurrentRoomCode), {
+                status: 'revealed'
+            });
+        };
+
+        function renderCardHTML(card, isHidden = false) {
+            if (isHidden) {
+                return `<div class="w-16 h-24 sm:w-20 sm:h-28 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-800 border-2 border-white/25 flex items-center justify-center shadow-md">
+                    <span class="text-xl opacity-70">🂠</span>
+                </div>`;
+            }
+            const isRed = card.suit === '♥' || card.suit === '♦';
+            const colorClass = isRed ? 'text-rose-600' : 'text-slate-900';
+            return `<div class="w-16 h-24 sm:w-20 sm:h-28 rounded-xl bg-slate-100 ${colorClass} p-2 flex flex-col justify-between shadow-lg border border-white">
+                <div class="text-left leading-none font-extrabold text-sm sm:text-base">${card.label}<br><span class="text-xs">${card.suit}</span></div>
+                <div class="text-center text-2xl sm:text-3xl leading-none">${card.suit}</div>
+                <div class="text-right leading-none font-extrabold text-sm sm:text-base rotate-180">${card.label}<br><span class="text-xs">${card.suit}</span></div>
+            </div>`;
+        }
+
+        function renderPokdengTable() {
+            if (!pdRoomData) return;
+            const allPlayers = Object.values(pdRoomData.players).sort((a, b) => a.joinedAt - b.joinedAt);
+            const isHost = pdRoomData.hostId === currentUserId;
+            const me = pdRoomData.players[currentUserId];
+            const hostPlayer = pdRoomData.players[pdRoomData.hostId];
+            const hostEval = hostPlayer ? evaluatePokdengHand(hostPlayer.cards) : null;
+
+            document.getElementById('pdPlayerCountText').textContent = `${allPlayers.length} คนในห้อง`;
+
+            // อัปเดตสถานะหัวตาราง
+            const statusEl = document.getElementById('pdRoundStatusText');
+            if (pdRoomData.status === 'waiting') {
+                statusEl.textContent = isHost ? "กด 'แจกไพ่เริ่มรอบใหม่' เมื่อเพื่อนครบ!" : "รอเจ้ามือแจกไพ่...";
+            } else if (pdRoomData.status === 'playing') {
+                const pendingCount = allPlayers.filter(p => !p.doneTurn).length;
+                statusEl.textContent = pendingCount > 0 ? `กำลังตัดสินใจจั่วไพ่ (เหลือ ${pendingCount} คน)` : "ทุกคนตัดสินใจครบแล้ว รอเจ้ามือเปิดไพ่!";
+            } else {
+                statusEl.textContent = "🔥 เปิดไพ่ตัดสินผลแพ้-ชนะแล้ว!";
+            }
+
+            // เรนเดอร์การ์ดผู้เล่นคนอื่นๆ ในห้อง
+            const grid = document.getElementById('pdOpponentsGrid');
+            grid.innerHTML = '';
+
+            allPlayers.forEach(p => {
+                if (p.uid === currentUserId) return; // ตัวเราเองแสดงด้านล่าง
+                const pIsHost = p.uid === pdRoomData.hostId;
+                const pEval = evaluatePokdengHand(p.cards);
+                const showCards = pdRoomData.status === 'revealed' || (pdRoomData.status === 'playing' && pEval.isPok);
+
+                let outcomeBadge = '';
+                if (pdRoomData.status === 'revealed' && hostEval && p.cards.length >= 2) {
+                    if (pIsHost) {
+                        outcomeBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold">เจ้ามือ (${pEval.label})</span>`;
+                    } else if (pEval.rankScore > hostEval.rankScore) {
+                        outcomeBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">ชนะเจ้า! เจ้าดื่ม ${pEval.deng} อึก</span>`;
+                    } else if (pEval.rankScore < hostEval.rankScore) {
+                        outcomeBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-bold">แพ้เจ้า! ดื่ม ${hostEval.deng} อึก</span>`;
+                    } else {
+                        outcomeBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-500/20 text-slate-300 font-bold">เสมอเจ้ามือ</span>`;
+                    }
+                } else if (pdRoomData.status === 'playing') {
+                    if (pEval.isPok) {
+                        outcomeBadge = `<span class="text-[10px] px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-extrabold">${pEval.label}!</span>`;
+                    } else {
+                        outcomeBadge = p.doneTurn
+                            ? `<span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">พร้อมเปิด (${p.cards.length} ใบ)</span>`
+                            : `<span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 text-slate-400">กำลังคิด...</span>`;
+                    }
+                }
+
+                const miniCardsHTML = p.cards.length === 0
+                    ? `<span class="text-[11px] text-slate-500">ยังไม่มีไพ่</span>`
+                    : p.cards.map(c => {
+                        if (!showCards) return `<div class="w-7 h-10 rounded bg-emerald-700 border border-white/20 flex items-center justify-center text-[10px]">🂠</div>`;
+                        const red = c.suit === '♥' || c.suit === '♦';
+                        return `<div class="w-8 h-11 rounded bg-slate-100 ${red ? 'text-rose-600' : 'text-slate-900'} flex flex-col items-center justify-center text-[11px] font-bold leading-tight shadow">
+                            <span>${c.label}</span><span>${c.suit}</span>
+                        </div>`;
+                    }).join('');
+
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'glass-card rounded-2xl p-3 flex flex-col justify-between space-y-2';
+                cardDiv.innerHTML = `
+                    <div class="flex items-center justify-between gap-1">
+                        <span class="text-xs font-bold text-white truncate">${pIsHost ? '👑 ' : ''}${p.name}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 min-h-[44px]">${miniCardsHTML}</div>
+                    <div>${outcomeBadge || `<span class="text-[10px] text-slate-400">${pdRoomData.status === 'revealed' ? pEval.label : 'รอเล่น'}</span>`}</div>
+                `;
+                grid.appendChild(cardDiv);
+            });
+
+            if (allPlayers.length === 1) {
+                grid.innerHTML = `<div class="col-span-2 glass-card rounded-2xl p-4 text-center text-xs text-slate-400">
+                    แชร์รหัสห้อง <strong class="text-emerald-400 text-sm">${pdCurrentRoomCode}</strong> ให้เพื่อนเข้ามาร่วมวงได้เลย!
+                </div>`;
+            }
+
+            // เรนเดอร์ไพ่ในมือของคุณเอง
+            if (me) {
+                document.getElementById('pdMyRoleLabel').textContent = isHost ? '👑 เจ้ามือ' : 'ลูกขา';
+                const myEval = evaluatePokdengHand(me.cards);
+                const myCardsBox = document.getElementById('pdMyCardsContainer');
+                const myScoreEl = document.getElementById('pdMyHandScore');
+                const myBadgeEl = document.getElementById('pdMyStatusBadge');
+
+                if (me.cards.length === 0) {
+                    myCardsBox.innerHTML = `<div class="w-20 h-28 rounded-xl border border-dashed border-white/20 flex items-center justify-center text-slate-500 text-xs">รอแจกไพ่</div>`;
+                    myScoreEl.textContent = "รอเริ่มรอบใหม่...";
+                    myBadgeEl.textContent = "พร้อมเล่น";
+                } else {
+                    myCardsBox.innerHTML = me.cards.map(c => renderCardHTML(c, false)).join('');
+                    myScoreEl.textContent = myEval.label;
+
+                    if (pdRoomData.status === 'revealed' && hostEval) {
+                        if (isHost) {
+                            myBadgeEl.textContent = "เจ้ามือเปิดไพ่แล้ว";
+                            myBadgeEl.className = "px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300";
+                        } else if (myEval.rankScore > hostEval.rankScore) {
+                            myBadgeEl.textContent = `ชนะ! เจ้ามือดื่ม ${myEval.deng} อึก 🎉`;
+                            myBadgeEl.className = "px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500 text-slate-950";
+                        } else if (myEval.rankScore < hostEval.rankScore) {
+                            myBadgeEl.textContent = `แพ้เจ้า! ยกดื่ม ${hostEval.deng} อึก 🍺`;
+                            myBadgeEl.className = "px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-500 text-white";
+                        } else {
+                            myBadgeEl.textContent = "เสมอเจ้ามือ 🤝";
+                            myBadgeEl.className = "px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-500/30 text-slate-200";
+                        }
+                    } else {
+                        myBadgeEl.textContent = me.doneTurn ? "พร้อมเปิดไพ่ ✅" : "ตาคุณตัดสินใจ";
+                        myBadgeEl.className = "px-2.5 py-1 rounded-full text-[11px] font-semibold bg-white/10 text-slate-300";
+                    }
+                }
+
+                // แสดง/ซ่อนปุ่มควบคุมตามสถานะ
+                const turnBtns = document.getElementById('pdPlayerTurnBtns');
+                const hostControls = document.getElementById('pdHostControls');
+                const dealBtn = document.getElementById('pdDealBtn');
+                const revealBtn = document.getElementById('pdRevealBtn');
+
+                if (pdRoomData.status === 'playing' && !me.doneTurn && me.cards.length === 2) {
+                    turnBtns.classList.remove('hidden');
+                } else {
+                    turnBtns.classList.add('hidden');
+                }
+
+                if (isHost) {
+                    hostControls.classList.remove('hidden');
+                    if (pdRoomData.status === 'playing') {
+                        dealBtn.classList.add('hidden');
+                        revealBtn.classList.remove('hidden');
+                    } else {
+                        dealBtn.classList.remove('hidden');
+                        revealBtn.classList.add('hidden');
+                    }
+                } else {
+                    hostControls.classList.add('hidden');
+                }
+            }
+        }
+    </script>
     <script>
         // ==================== 1. ระบบเสียง (Tone.js) ====================
         let soundEnabled = true;
@@ -839,7 +1427,7 @@
 
         function navigateTo(viewId) {
             playSound('click');
-            const sections = ['home', 'kings', 'tod', 'bottle', 'bomb', 'never', 'wheel', 'most', 'highlow', 'fivesec', 'coin', 'dice', 'croc'];
+            const sections = ['home', 'kings', 'tod', 'bottle', 'bomb', 'never', 'wheel', 'most', 'highlow', 'fivesec', 'coin', 'dice', 'croc', 'pokdeng'];
             sections.forEach(sec => {
                 const el = document.getElementById(`view-${sec}`);
                 if (el) {
