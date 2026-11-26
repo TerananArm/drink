@@ -16,6 +16,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <!-- โหลด Three.js สำหรับจระเข้ 3D -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- โหลด PeerJS สำหรับเชื่อมมือถือหลายเครื่องเล่นป็อกเด้งสดบนเว็บจริง -->
+    <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 
     <style>
         body {
@@ -749,7 +751,7 @@
                         </button>
                     </div>
                 </div>
-                <p id="pdLobbyStatus" class="text-center text-xs text-slate-400">กำลังเชื่อมต่อเซิร์ฟเวอร์...</p>
+                <p id="pdLobbyStatus" class="text-center text-xs text-emerald-400 font-medium">🟢 พร้อมเชื่อมต่อหลายเครื่องบนเว็บจริงแล้ว</p>
             </div>
 
             <!-- หน้าโต๊ะเล่นป็อกเด้งสด -->
@@ -853,44 +855,15 @@
     </div>
 
     <!-- ==================== JAVASCRIPT LOGIC ==================== -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // ตั้งค่า Firebase สำหรับระบบป็อกเด้งหลายเครื่องเรียลไทม์
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'party-drink-pokdeng';
-        let db = null;
-        let auth = null;
-        let currentUserId = null;
-        let pdRoomUnsubscribe = null;
+    <script>
+        // ==================== ระบบป็อกเด้งออนไลน์หลายเครื่อง (PeerJS P2P) ====================
+        let pdPeer = null;
+        let pdHostConn = null; // สำหรับลูกขาเชื่อมหาเจ้ามือ
+        let pdClientConns = {}; // สำหรับเจ้ามือเก็บการเชื่อมต่อของลูกขา
+        let pdMyId = 'user_' + Math.random().toString(36).substring(2, 9);
         let pdCurrentRoomCode = null;
         let pdRoomData = null;
-
-        async function initFirebaseMultiplayer() {
-            try {
-                if (typeof __firebase_config === 'undefined') {
-                    document.getElementById('pdLobbyStatus').textContent = "โหมดออฟไลน์: ไม่พบการตั้งค่าระบบออนไลน์";
-                    return;
-                }
-                const firebaseConfig = JSON.parse(__firebase_config);
-                const app = initializeApp(firebaseConfig);
-                auth = getAuth(app);
-                db = getFirestore(app);
-
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-                currentUserId = auth.currentUser?.uid || ('user_' + Math.random().toString(36).substring(2, 9));
-                document.getElementById('pdLobbyStatus').textContent = "🟢 เชื่อมต่อระบบออนไลน์พร้อมเล่นหลายเครื่องแล้ว";
-            } catch (err) {
-                console.error("Firebase init error:", err);
-                document.getElementById('pdLobbyStatus').textContent = "⚠️ เชื่อมต่อเซิร์ฟเวอร์ขัดข้อง ลองรีเฟรชหน้าเว็บ";
-            }
-        }
-        initFirebaseMultiplayer();
+        let pdIsHost = false;
 
         // ฟังก์ชันสร้างสำรับไพ่ 52 ใบและคำนวณแต้มป็อกเด้ง
         function createShuffledDeck() {
@@ -938,11 +911,9 @@
 
             // เช็กไพ่พิเศษ 3 ใบ
             if (cards.length === 3) {
-                // ตอง
                 if (sameRank) {
                     return { rankScore: 900 + cards[0].order, points: sumPoints, deng: 5, label: `ตอง ${cards[0].label} (5 เด้ง)`, isPok: false };
                 }
-                // เรียง / สเตรทฟลัช
                 const sorted = [...cards].sort((a, b) => a.order - b.order);
                 const isStraight = (sorted[1].order === sorted[0].order + 1 && sorted[2].order === sorted[1].order + 1) ||
                                    (sorted[0].order === 1 && sorted[1].order === 12 && sorted[2].order === 13);
@@ -952,14 +923,12 @@
                 if (isStraight) {
                     return { rankScore: 800 + sorted[2].order, points: sumPoints, deng: 3, label: `ไพ่เรียง (3 เด้ง)`, isPok: false };
                 }
-                // เซียน (J, Q, K ทั้ง 3 ใบ)
                 const allCourt = cards.every(c => ['J', 'Q', 'K'].includes(c.label));
                 if (allCourt) {
                     return { rankScore: 750, points: 0, deng: 3, label: `สามเหลือง/เซียน (3 เด้ง)`, isPok: false };
                 }
             }
 
-            // แต้มปกติ
             let deng = 1;
             if (cards.length === 2 && (sameSuit || sameRank)) deng = 2;
             if (cards.length === 3 && sameSuit) deng = 3;
@@ -973,48 +942,118 @@
             };
         }
 
-        function getRoomDocRef(code) {
-            return doc(db, 'artifacts', appId, 'public', 'data', 'pokdeng_rooms', code);
+        // ส่งข้อมูลสถานะห้องล่าสุดจากเจ้ามือไปยังลูกขาทุกคน
+        function broadcastRoomState() {
+            if (!pdIsHost || !pdRoomData) return;
+            renderPokdengTable();
+            Object.values(pdClientConns).forEach(conn => {
+                if (conn && conn.open) {
+                    conn.send({ type: 'STATE_UPDATE', roomData: pdRoomData });
+                }
+            });
         }
 
-        window.createPokdengRoom = async function() {
-            if (!db || !currentUserId) {
-                showResultModal('⚠️', 'กำลังเชื่อมต่อ', 'กรุณารอสักครู่ให้ระบบออนไลน์เชื่อมต่อเสร็จก่อนครับ');
+        function enterPokdengTableUI(code) {
+            pdCurrentRoomCode = code;
+            document.getElementById('pdLobbyView').classList.add('hidden');
+            document.getElementById('pdTableView').classList.remove('hidden');
+            document.getElementById('pdTableView').classList.add('flex');
+            document.getElementById('pdRoomBadge').classList.remove('hidden');
+            document.getElementById('pdRoomCodeDisplay').textContent = code;
+        }
+
+        function createPokdengRoom() {
+            if (typeof Peer === 'undefined') {
+                showResultModal('⚠️', 'กำลังโหลดระบบ', 'กรุณารอสักครู่หรือรีเฟรชหน้าเว็บครับ');
                 return;
             }
             playSound('click');
             const nameInput = document.getElementById('pdPlayerNameInput').value.trim();
             const playerName = nameInput || (players[0] || 'เจ้ามือ');
             const roomCode = Math.floor(1000 + Math.random() * 9000).toString();
+            const peerId = `partydrink-pd-${roomCode}`;
 
-            const initialRoom = {
-                roomCode: roomCode,
-                hostId: currentUserId,
-                status: 'waiting', // waiting | playing | revealed
-                deck: [],
-                players: {
-                    [currentUserId]: {
-                        uid: currentUserId,
-                        name: playerName,
-                        cards: [],
-                        doneTurn: false,
-                        joinedAt: Date.now()
+            document.getElementById('pdLobbyStatus').textContent = "⏳ กำลังสร้างห้องออนไลน์...";
+
+            if (pdPeer) pdPeer.destroy();
+            pdPeer = new Peer(peerId);
+
+            pdPeer.on('open', () => {
+                pdIsHost = true;
+                pdClientConns = {};
+                pdRoomData = {
+                    roomCode: roomCode,
+                    hostId: pdMyId,
+                    status: 'waiting',
+                    deck: [],
+                    players: {
+                        [pdMyId]: {
+                            uid: pdMyId,
+                            name: playerName,
+                            cards: [],
+                            doneTurn: false,
+                            joinedAt: Date.now()
+                        }
                     }
-                }
-            };
+                };
+                document.getElementById('pdLobbyStatus').textContent = "🟢 สร้างห้องสำเร็จ!";
+                enterPokdengTableUI(roomCode);
+                renderPokdengTable();
+            });
 
-            try {
-                await setDoc(getRoomDocRef(roomCode), initialRoom);
-                subscribeToPokdengRoom(roomCode);
-            } catch (e) {
-                console.error(e);
-                showResultModal('❌', 'สร้างห้องไม่สำเร็จ', 'กรุณาลองกดสร้างห้องใหม่อีกครั้งครับ');
-            }
-        };
+            pdPeer.on('connection', (conn) => {
+                conn.on('data', (msg) => {
+                    if (msg.type === 'JOIN') {
+                        pdClientConns[msg.uid] = conn;
+                        pdRoomData.players[msg.uid] = {
+                            uid: msg.uid,
+                            name: msg.name,
+                            cards: [],
+                            doneTurn: true,
+                            joinedAt: Date.now()
+                        };
+                        playSound('click');
+                        broadcastRoomState();
+                    } else if (msg.type === 'ACTION_DRAW') {
+                        if (pdRoomData.status === 'playing') {
+                            const p = pdRoomData.players[msg.uid];
+                            if (p && !p.doneTurn && p.cards.length === 2 && pdRoomData.deck.length > 0) {
+                                p.cards.push(pdRoomData.deck.pop());
+                                p.doneTurn = true;
+                                broadcastRoomState();
+                            }
+                        }
+                    } else if (msg.type === 'ACTION_STAY') {
+                        if (pdRoomData.status === 'playing') {
+                            const p = pdRoomData.players[msg.uid];
+                            if (p && !p.doneTurn) {
+                                p.doneTurn = true;
+                                broadcastRoomState();
+                            }
+                        }
+                    }
+                });
 
-        window.joinPokdengRoom = async function() {
-            if (!db || !currentUserId) {
-                showResultModal('⚠️', 'กำลังเชื่อมต่อ', 'กรุณารอสักครู่ให้ระบบออนไลน์เชื่อมต่อเสร็จก่อนครับ');
+                conn.on('close', () => {
+                    // ลบผู้เล่นที่หลุดการเชื่อมต่อ
+                    const leftUid = Object.keys(pdClientConns).find(k => pdClientConns[k] === conn);
+                    if (leftUid) {
+                        delete pdClientConns[leftUid];
+                        delete pdRoomData.players[leftUid];
+                        broadcastRoomState();
+                    }
+                });
+            });
+
+            pdPeer.on('error', (err) => {
+                console.error(err);
+                document.getElementById('pdLobbyStatus').textContent = "⚠️ สร้างห้องไม่สำเร็จ ลองกดใหม่อีกครั้ง";
+            });
+        }
+
+        function joinPokdengRoom() {
+            if (typeof Peer === 'undefined') {
+                showResultModal('⚠️', 'กำลังโหลดระบบ', 'กรุณารอสักครู่หรือรีเฟรชหน้าเว็บครับ');
                 return;
             }
             playSound('click');
@@ -1026,145 +1065,136 @@
 
             const nameInput = document.getElementById('pdPlayerNameInput').value.trim();
             const playerName = nameInput || `ผู้เล่น_${Math.floor(Math.random() * 99)}`;
+            const hostPeerId = `partydrink-pd-${code}`;
 
-            try {
-                const ref = getRoomDocRef(code);
-                const snap = await getDoc(ref);
-                if (!snap.exists()) {
-                    showResultModal('🔍', 'ไม่พบห้องนี้', `ไม่พบห้องหมายเลข ${code} กรุณาตรวจสอบรหัสอีกครั้ง`);
-                    return;
-                }
+            document.getElementById('pdLobbyStatus').textContent = `⏳ กำลังเชื่อมต่อเข้าห้อง ${code}...`;
 
-                await updateDoc(ref, {
-                    [`players.${currentUserId}`]: {
-                        uid: currentUserId,
-                        name: playerName,
-                        cards: [],
-                        doneTurn: true,
-                        joinedAt: Date.now()
+            if (pdPeer) pdPeer.destroy();
+            pdPeer = new Peer();
+
+            pdPeer.on('open', () => {
+                pdIsHost = false;
+                const conn = pdPeer.connect(hostPeerId, { reliable: true });
+                pdHostConn = conn;
+
+                conn.on('open', () => {
+                    conn.send({ type: 'JOIN', uid: pdMyId, name: playerName });
+                    document.getElementById('pdLobbyStatus').textContent = "🟢 เชื่อมต่อเข้าห้องสำเร็จ!";
+                    enterPokdengTableUI(code);
+                });
+
+                conn.on('data', (msg) => {
+                    if (msg.type === 'STATE_UPDATE') {
+                        pdRoomData = msg.roomData;
+                        renderPokdengTable();
                     }
                 });
-                subscribeToPokdengRoom(code);
-            } catch (e) {
-                console.error(e);
-                showResultModal('❌', 'เข้าห้องไม่สำเร็จ', 'เกิดข้อผิดพลาดในการเชื่อมต่อห้อง');
-            }
-        };
 
-        function subscribeToPokdengRoom(code) {
-            if (pdRoomUnsubscribe) pdRoomUnsubscribe();
-            pdCurrentRoomCode = code;
-
-            document.getElementById('pdLobbyView').classList.add('hidden');
-            document.getElementById('pdTableView').classList.remove('hidden');
-            document.getElementById('pdTableView').classList.add('flex');
-            document.getElementById('pdRoomBadge').classList.remove('hidden');
-            document.getElementById('pdRoomCodeDisplay').textContent = code;
-
-            pdRoomUnsubscribe = onSnapshot(getRoomDocRef(code), (snap) => {
-                if (!snap.exists()) {
-                    showResultModal('🚪', 'ห้องถูกปิดแล้ว', 'เจ้ามือได้ปิดห้องเกมนี้แล้ว');
+                conn.on('close', () => {
+                    showResultModal('🚪', 'หลุดการเชื่อมต่อ', 'เจ้ามือปิดห้องแล้ว หรือสัญญาณอินเทอร์เน็ตหลุด');
                     leavePokdengRoom();
-                    return;
-                }
-                pdRoomData = snap.data();
-                renderPokdengTable();
-            }, (err) => {
-                console.error("Snapshot error:", err);
+                });
+
+                conn.on('error', () => {
+                    showResultModal('❌', 'เข้าห้องไม่สำเร็จ', `ไม่พบห้องหมายเลข ${code}`);
+                    leavePokdengRoom();
+                });
+            });
+
+            pdPeer.on('error', (err) => {
+                console.error(err);
+                document.getElementById('pdLobbyStatus').textContent = `❌ ไม่พบห้องหมายเลข ${code} กรุณาเช็กรหัสอีกครั้ง`;
+                showResultModal('🔍', 'ไม่พบห้องนี้', `ไม่พบห้องหมายเลข ${code} กรุณาตรวจสอบรหัสจากเครื่องเจ้ามือ`);
             });
         }
 
-        window.leavePokdengRoom = function() {
-            if (pdRoomUnsubscribe) {
-                pdRoomUnsubscribe();
-                pdRoomUnsubscribe = null;
+        function leavePokdengRoom() {
+            if (pdPeer) {
+                pdPeer.destroy();
+                pdPeer = null;
             }
+            pdHostConn = null;
+            pdClientConns = {};
             pdCurrentRoomCode = null;
             pdRoomData = null;
+            pdIsHost = false;
+
             document.getElementById('pdLobbyView').classList.remove('hidden');
             document.getElementById('pdTableView').classList.add('hidden');
             document.getElementById('pdTableView').classList.remove('flex');
             document.getElementById('pdRoomBadge').classList.add('hidden');
-        };
+            document.getElementById('pdLobbyStatus').textContent = "🟢 พร้อมเชื่อมต่อหลายเครื่องบนเว็บจริงแล้ว";
+        }
 
-        window.copyPokdengCode = function() {
+        function copyPokdengCode() {
             if (!pdCurrentRoomCode) return;
+            const shareText = `มาเล่นป็อกเด้งวงเหล้ากัน! เข้าเว็บ ${window.location.href} แล้วกรอกรหัสห้อง: ${pdCurrentRoomCode}`;
             const temp = document.createElement('input');
-            temp.value = pdCurrentRoomCode;
+            temp.value = shareText;
             document.body.appendChild(temp);
             temp.select();
             document.execCommand('copy');
             document.body.removeChild(temp);
             playSound('click');
-            showResultModal('📋', `คัดลอกรหัสห้อง ${pdCurrentRoomCode} แล้ว!`, 'ส่งรหัส 4 หลักนี้ให้เพื่อนกรอกเข้าห้องได้เลย!');
-        };
+            showResultModal('📋', `คัดลอกรหัสห้อง ${pdCurrentRoomCode} แล้ว!`, 'ส่งข้อความให้เพื่อนกดเข้าลิงก์และกรอกรหัส 4 หลักได้เลย!');
+        }
 
         // เจ้ามือแจกไพ่ทุกคนในห้อง
-        window.pdHostDeal = async function() {
-            if (!pdRoomData || pdRoomData.hostId !== currentUserId) return;
+        function pdHostDeal() {
+            if (!pdIsHost || !pdRoomData) return;
             playSound('card');
 
             const deck = createShuffledDeck();
-            const updatedPlayers = {};
-            const pList = Object.values(pdRoomData.players);
-
-            pList.forEach(p => {
-                const c1 = deck.pop();
-                const c2 = deck.pop();
-                const hand = [c1, c2];
+            Object.values(pdRoomData.players).forEach(p => {
+                const hand = [deck.pop(), deck.pop()];
                 const evalRes = evaluatePokdengHand(hand);
-                updatedPlayers[p.uid] = {
-                    ...p,
-                    cards: hand,
-                    doneTurn: evalRes.isPok // ถ้าป็อก 8/9 ถือว่าจบเทิร์นทันที
-                };
+                p.cards = hand;
+                p.doneTurn = evalRes.isPok;
             });
 
-            await updateDoc(getRoomDocRef(pdCurrentRoomCode), {
-                status: 'playing',
-                deck: deck,
-                players: updatedPlayers
-            });
-        };
+            pdRoomData.status = 'playing';
+            pdRoomData.deck = deck;
+            broadcastRoomState();
+        }
 
         // ผู้เล่นจั่วไพ่ใบที่ 3
-        window.pdPlayerDraw = async function() {
+        function pdPlayerDraw() {
             if (!pdRoomData || pdRoomData.status !== 'playing') return;
-            const me = pdRoomData.players[currentUserId];
+            const me = pdRoomData.players[pdMyId];
             if (!me || me.doneTurn || me.cards.length >= 3) return;
 
             playSound('card');
-            const deck = [...pdRoomData.deck];
-            const card3 = deck.pop();
-            const newCards = [...me.cards, card3];
-
-            await updateDoc(getRoomDocRef(pdCurrentRoomCode), {
-                deck: deck,
-                [`players.${currentUserId}.cards`]: newCards,
-                [`players.${currentUserId}.doneTurn`]: true
-            });
-        };
+            if (pdIsHost) {
+                me.cards.push(pdRoomData.deck.pop());
+                me.doneTurn = true;
+                broadcastRoomState();
+            } else if (pdHostConn && pdHostConn.open) {
+                pdHostConn.send({ type: 'ACTION_DRAW', uid: pdMyId });
+            }
+        }
 
         // ผู้เล่นเลือกอยู่ (ไม่จั่ว)
-        window.pdPlayerStay = async function() {
+        function pdPlayerStay() {
             if (!pdRoomData || pdRoomData.status !== 'playing') return;
-            const me = pdRoomData.players[currentUserId];
+            const me = pdRoomData.players[pdMyId];
             if (!me || me.doneTurn) return;
 
             playSound('click');
-            await updateDoc(getRoomDocRef(pdCurrentRoomCode), {
-                [`players.${currentUserId}.doneTurn`]: true
-            });
-        };
+            if (pdIsHost) {
+                me.doneTurn = true;
+                broadcastRoomState();
+            } else if (pdHostConn && pdHostConn.open) {
+                pdHostConn.send({ type: 'ACTION_STAY', uid: pdMyId });
+            }
+        }
 
         // เจ้ามือสั่งเปิดไพ่ตัดสินผลทั้งหมด
-        window.pdHostRevealAll = async function() {
-            if (!pdRoomData || pdRoomData.hostId !== currentUserId) return;
+        function pdHostRevealAll() {
+            if (!pdIsHost || !pdRoomData) return;
             playSound('win');
-            await updateDoc(getRoomDocRef(pdCurrentRoomCode), {
-                status: 'revealed'
-            });
-        };
+            pdRoomData.status = 'revealed';
+            broadcastRoomState();
+        }
 
         function renderCardHTML(card, isHidden = false) {
             if (isHidden) {
@@ -1184,14 +1214,13 @@
         function renderPokdengTable() {
             if (!pdRoomData) return;
             const allPlayers = Object.values(pdRoomData.players).sort((a, b) => a.joinedAt - b.joinedAt);
-            const isHost = pdRoomData.hostId === currentUserId;
-            const me = pdRoomData.players[currentUserId];
+            const isHost = pdRoomData.hostId === pdMyId;
+            const me = pdRoomData.players[pdMyId];
             const hostPlayer = pdRoomData.players[pdRoomData.hostId];
             const hostEval = hostPlayer ? evaluatePokdengHand(hostPlayer.cards) : null;
 
             document.getElementById('pdPlayerCountText').textContent = `${allPlayers.length} คนในห้อง`;
 
-            // อัปเดตสถานะหัวตาราง
             const statusEl = document.getElementById('pdRoundStatusText');
             if (pdRoomData.status === 'waiting') {
                 statusEl.textContent = isHost ? "กด 'แจกไพ่เริ่มรอบใหม่' เมื่อเพื่อนครบ!" : "รอเจ้ามือแจกไพ่...";
@@ -1202,12 +1231,11 @@
                 statusEl.textContent = "🔥 เปิดไพ่ตัดสินผลแพ้-ชนะแล้ว!";
             }
 
-            // เรนเดอร์การ์ดผู้เล่นคนอื่นๆ ในห้อง
             const grid = document.getElementById('pdOpponentsGrid');
             grid.innerHTML = '';
 
             allPlayers.forEach(p => {
-                if (p.uid === currentUserId) return; // ตัวเราเองแสดงด้านล่าง
+                if (p.uid === pdMyId) return;
                 const pIsHost = p.uid === pdRoomData.hostId;
                 const pEval = evaluatePokdengHand(p.cards);
                 const showCards = pdRoomData.status === 'revealed' || (pdRoomData.status === 'playing' && pEval.isPok);
@@ -1261,7 +1289,6 @@
                 </div>`;
             }
 
-            // เรนเดอร์ไพ่ในมือของคุณเอง
             if (me) {
                 document.getElementById('pdMyRoleLabel').textContent = isHost ? '👑 เจ้ามือ' : 'ลูกขา';
                 const myEval = evaluatePokdengHand(me.cards);
@@ -1297,7 +1324,6 @@
                     }
                 }
 
-                // แสดง/ซ่อนปุ่มควบคุมตามสถานะ
                 const turnBtns = document.getElementById('pdPlayerTurnBtns');
                 const hostControls = document.getElementById('pdHostControls');
                 const dealBtn = document.getElementById('pdDealBtn');
@@ -1323,8 +1349,7 @@
                 }
             }
         }
-    </script>
-    <script>
+
         // ==================== 1. ระบบเสียง (Tone.js) ====================
         let soundEnabled = true;
         let synth = null;
